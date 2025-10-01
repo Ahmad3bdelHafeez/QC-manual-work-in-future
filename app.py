@@ -112,12 +112,15 @@ def generate_test_plan():
 
     if not job_scope:
         return jsonify({"error": "job_scope is required"}), 400
-
-    sections = extract_sections_from_template(template_path)
-    filled_sections = fill_sections_with_scope(sections, job_scope)
-    result_path = update_template_with_filled_sections(template_path, filled_sections, output_path)
-    print(jsonify({"message": "Test plan generated", "output_path": result_path}))
-    return jsonify({"message": "Test plan generated", "output_path": result_path})
+    try:
+        sections = extract_sections_from_template(template_path)
+        filled_sections = fill_sections_with_scope(sections, job_scope)
+        result_path = update_template_with_filled_sections(template_path, filled_sections, output_path)
+        print(jsonify({"message": "Test plan generated", "output_path": result_path}))
+        return jsonify({"message": "Test plan generated", "output_path": result_path})
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)})
 
 @app.route('/generate-test-cases', methods=['POST'])
 def generate_test_cases():
