@@ -5,9 +5,13 @@ from docx import Document
 from mistralai import Mistral
 
 from flask_cors import CORS
+from flask import send_from_directory
 
 app = Flask(__name__)
 CORS(app)  # allow all origins
+@app.route("/download/<filename>")
+def download_file(filename):
+    return send_from_directory("/tmp", filename, as_attachment=True)
 
 def call_mistral_model(prompt):
     client = Mistral(api_key="dGA15ms96fjMa6vGmXO7veWlAKInqWVm")
@@ -193,3 +197,4 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
