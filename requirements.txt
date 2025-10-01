@@ -4,5 +4,3 @@ mistralai==0.0.11
 Flask~=2.2.2
 flask-cors~=6.0.1
 waitress~=3.0.2
-
-
