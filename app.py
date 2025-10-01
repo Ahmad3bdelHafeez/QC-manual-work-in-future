@@ -2,6 +2,7 @@ import os
 
 from flask import Flask, request, jsonify, render_template
 from docx import Document
+from docx.shared import Pt
 from mistralai import Mistral
 
 from flask_cors import CORS
@@ -67,15 +68,22 @@ def insert_markdown(paragraph, markdown_text):
     """
     # Clear existing text
     paragraph.clear()
-
     # Check if the line is a heading
-    # heading_match = re.match(r'^(#{1,2})\s+(.*)', markdown_text)
-    # if heading_match:
-    #     hashes, heading_text = heading_match.groups()
-    #     level = len(hashes)  # number of # determines heading level
-    #     paragraph.style = f"Heading {level}"
-    #     paragraph.add_run(heading_text)
-    #     return
+    heading_match = re.match(r'^(#{1,6})\s+(.*)', markdown_text)
+    if heading_match:
+        hashes, heading_text = heading_match.groups()
+        level = min(len(hashes), 4)
+        heading_name = f"Heading {level}"
+
+        try:
+            paragraph.style = heading_name
+            paragraph.add_run(heading_text)
+        except Exception:
+            # fallback: style doesn't exist — emulate heading formatting
+            run = paragraph.add_run(heading_text)
+            run.bold = True
+            run.font.size = Pt({1:24, 2:20, 3:16, 4:14}.get(level, 12))
+        return
 
     # Otherwise, parse inline bold/italic
     tokens = re.split(r'(\*\*.*?\*\*|\*.*?\*)', markdown_text)
@@ -197,4 +205,5 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
