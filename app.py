@@ -68,32 +68,25 @@ def insert_markdown(paragraph, markdown_text):
     """
     # Clear existing text
     paragraph.clear()
+
     # Check if the line is a heading
-    heading_match = re.match(r'^(#{1,6})\s+(.*)', markdown_text)
-    if heading_match:
-        hashes, heading_text = heading_match.groups()
-        level = min(len(hashes), 4)
-        heading_name = f"Heading {level}"
+    # heading_match = re.match(r'^(#{1,2})\s+(.*)', markdown_text)
+    # if heading_match:
+    #     hashes, heading_text = heading_match.groups()
+    #     level = len(hashes)  # number of # determines heading level
+    #     paragraph.style = f"Heading {level}"
+    #     paragraph.add_run(heading_text)
+    #     return
 
-        try:
-            paragraph.style = heading_name
-            paragraph.add_run(heading_text)
-        except Exception:
-            # fallback: style doesn't exist — emulate heading formatting
-            run = paragraph.add_run(heading_text)
-            run.bold = True
-            run.font.size = Pt({1:24, 2:20, 3:16, 4:14}.get(level, 12))
-        return
-
-    # inline bold / italic
+    # Otherwise, parse inline bold/italic
     tokens = re.split(r'(\*\*.*?\*\*|\*.*?\*)', markdown_text)
     for token in tokens:
         if token.startswith("**") and token.endswith("**"):
-            r = paragraph.add_run(token[2:-2])
-            r.bold = True
+            run = paragraph.add_run(token.strip("*"))
+            run.bold = True
         elif token.startswith("*") and token.endswith("*"):
-            r = paragraph.add_run(token[1:-1])
-            r.italic = True
+            run = paragraph.add_run(token.strip("*"))
+            run.italic = True
         else:
             paragraph.add_run(token)
 
@@ -205,5 +198,6 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
