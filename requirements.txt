@@ -4,4 +4,6 @@ mistralai
 Flask
 gunicorn
 flask-cors
+waitress
+
 
