@@ -85,15 +85,15 @@ def insert_markdown(paragraph, markdown_text):
             run.font.size = Pt({1:24, 2:20, 3:16, 4:14}.get(level, 12))
         return
 
-    # Otherwise, parse inline bold/italic
+    # inline bold / italic
     tokens = re.split(r'(\*\*.*?\*\*|\*.*?\*)', markdown_text)
     for token in tokens:
         if token.startswith("**") and token.endswith("**"):
-            run = paragraph.add_run(token.strip("*"))
-            run.bold = True
+            r = paragraph.add_run(token[2:-2])
+            r.bold = True
         elif token.startswith("*") and token.endswith("*"):
-            run = paragraph.add_run(token.strip("*"))
-            run.italic = True
+            r = paragraph.add_run(token[1:-1])
+            r.italic = True
         else:
             paragraph.add_run(token)
 
