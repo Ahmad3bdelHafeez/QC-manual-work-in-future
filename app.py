@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from docx import Document
 from mistralai import Mistral
 
@@ -183,5 +183,10 @@ input description: {input}"""
     print({"message": "Dummy data generated", "output": result})
     return jsonify({"message": "Dummy data generated", "output": result})
 
+
+# Serve home page
+@app.route("/", methods=["GET"])
+def home():
+    return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
