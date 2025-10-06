@@ -237,6 +237,7 @@ def generate_data_quality_tests():
     The SQL dialect should be compatible with TeradataSQL (or ANSI SQL if unspecified).
 
     Input Example
+    
     {input}
 
 
@@ -264,6 +265,8 @@ def generate_data_quality_tests():
     -- =======================
     SELECT ...
     """
+
+    print(f'#### {prompt}')
     result = call_mistral_model(prompt)
     print(result)
     print({"message": "Data Quality Tests generated", "output": result})
@@ -274,6 +277,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
