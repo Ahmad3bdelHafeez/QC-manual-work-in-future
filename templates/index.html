@@ -7,7 +7,546 @@
   <style>
     body {
       margin: 0;
+      font-family: Arial, sans-serif;<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Tools</title>
+  <style>
+    body {
+      margin: 0;
       font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 220px;
+      background: #f3f4f6;
+      border-right: 1px solid #ddd;
+      padding-top: 20px;
+    }
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar li {
+      padding: 12px 20px;
+      cursor: pointer;
+    }
+    .sidebar li:hover,
+    .sidebar li.active {
+      background: #dbeafe;
+      font-weight: bold;
+    }
+    .content {
+      flex: 1;
+      padding: 20px;
+      background: #f9fafb;
+      overflow-y: auto;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    textarea {
+      width: 98%;
+      height: 120px;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 8px 16px;
+      margin-right: 8px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-blue { background: #3b82f6; color: white; }
+    #result { margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>QA Tools</h2>
+    <ul>
+      <li class="active" onclick="showPage('test-plan')">Test Plan Generator</li>
+      <li onclick="showPage('test-case')">Test Case Generator</li>
+      <li onclick="showPage('bug-reporter')">Bug Reporter</li>
+      <li onclick="showPage('data-generator')">Data Generator</li>
+      <li onclick="showPage('data-quality')">Data Quality Tests Generator</li>
+    </ul>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="content">
+
+    <!-- ===================== -->
+    <!-- Test Plan Generator -->
+    <!-- ===================== -->
+    <div id="test-plan" class="page">
+      <h1>Test Plan Generator</h1>
+      <div class="card">
+        <h3>Requirements Input</h3>
+        <textarea id="requirements" placeholder="Paste your requirements, user stories, or feature specifications here..."></textarea>
+        <div>
+          <button class="btn-blue" onclick="generateTestPlan()">Generate Test Plan</button>
+        </div>
+      </div>
+      <div class="card" id="result" style="text-align:center; color:gray;">
+        <p>Your generated test plan will appear here</p>
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- Test Case Generator -->
+    <!-- ===================== -->
+    <div id="test-case" class="page" style="display:none;">
+      <h1>Test Case Generator</h1>
+      <div class="card">
+        <h3>User Story / Requirement</h3>
+        <textarea id="testcase-input" placeholder="Paste your user story or requirement here..."></textarea>
+        <div>
+          <button class="btn-blue" onclick="generateTestCases()">Generate Test Cases</button>
+        </div>
+      </div>
+      <div id="testcase-actions" style="display:none; margin-top:10px; text-align:right;">
+        <button class="btn-blue" onclick="copyTable()">📋 Copy Table</button>
+        <button class="btn-blue" onclick="downloadExcel()">⬇️ Download Excel</button>
+      </div>
+      <div class="card" id="testcase-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
+        <p>Your generated test cases will appear here</p>
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- Bug Reporter -->
+    <!-- ===================== -->
+    <div id="bug-reporter" class="page" style="display:none;">
+      <h1>Bug Reporter</h1>
+      <div class="card">
+        <h3>Bug(s) Description / Scenario</h3>
+        <textarea id="bugreport-input" placeholder="Describe the bug(s) or scenario(s) here..."></textarea>
+        <div>
+          <button class="btn-blue" onclick="generateBugReport()">Generate Bug Report</button>
+        </div>
+      </div>
+      <div id="bugreport-actions" style="display:none; margin-top:10px; text-align:right;">
+        <button class="btn-blue" onclick="copyBugReport()">📋 Copy Table</button>
+        <button class="btn-blue" onclick="downloadBugReport()">⬇️ Download Excel</button>
+      </div>
+      <div class="card" id="bugreport-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
+        <p>Your generated bug report will appear here</p>
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- Data Generator -->
+    <!-- ===================== -->
+    <div id="data-generator" class="page" style="display:none;">
+      <h1>Data Generator</h1>
+      <div class="card">
+        <h3>Data Requirements</h3>
+        <textarea id="datagenerator-input" placeholder="Describe the data you want to generate (e.g., 50 fake users with name, email, phone)..."></textarea>
+        <div>
+          <button class="btn-blue" onclick="generateData()">Generate Data</button>
+        </div>
+      </div>
+      <div id="datagenerator-actions" style="display:none; margin-top:10px; text-align:right;">
+        <button class="btn-blue" onclick="copyData()">📋 Copy Table</button>
+        <button class="btn-blue" onclick="downloadData()">⬇️ Download Excel</button>
+      </div>
+      <div class="card" id="datagenerator-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
+        <p>Your generated data will appear here</p>
+      </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- Data Quality Tests Generator -->
+    <!-- ============================= -->
+    <div id="data-quality" class="page" style="display:none;">
+      <h1>Data Quality Tests Generator</h1>
+      <div class="card">
+        <h3>Table Schema</h3>
+        <textarea id="dataquality-input" placeholder="Paste your table schema here (e.g., column names and data types)..."></textarea>
+        <div>
+          <button class="btn-blue" onclick="generateDataQualityTests()">Generate Tests</button>
+        </div>
+      </div>
+      <div class="card" id="dataquality-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
+        <p>Your generated data quality tests will appear here</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Sidebar Navigation
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+      document.getElementById(pageId).style.display = 'block';
+      document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    let loadingInterval;
+
+    // ===============================
+    // Test Plan Generator
+    // ===============================
+    async function generateTestPlan() {
+      const resultDiv = document.getElementById("result");
+      const jobScope = document.getElementById("requirements").value.trim();
+
+      if (!jobScope) {
+        resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter some requirements first.</p>";
+        return;
+      }
+
+      let seconds = 0;
+      resultDiv.innerHTML = `<p id="loading-text">⏳ Generating test plan... (0s)</p>`;
+
+      loadingInterval = setInterval(() => {
+        seconds++;
+        const dots = ".".repeat((seconds % 4));
+        document.getElementById("loading-text").innerText = 
+          `⏳ Generating test plan${dots} (${seconds}s)`;
+      }, 1000);
+
+      try {
+        const response = await fetch("/generate-test-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ job_scope: jobScope })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+        clearInterval(loadingInterval);
+
+        if (data.output_path) {
+          resultDiv.innerHTML = `
+            <p>✅ Test Plan generated in ${seconds}s!</p>
+            <a href="/download/Updated_Test_Plan.docx" download class="btn-blue">Download Test Plan</a>
+          `;
+        } else {
+          resultDiv.innerHTML = "<p>⚠️ No file path returned from server.</p>";
+        }
+      } catch (error) {
+        clearInterval(loadingInterval);
+        resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
+      }
+    }
+
+    // ===============================
+    // Data Quality Tests Generator
+    // ===============================
+    let dataQualityLoadingInterval;
+
+    async function generateDataQualityTests() {
+      const input = document.getElementById("dataquality-input").value.trim();
+      const resultDiv = document.getElementById("dataquality-result");
+
+      if (!input) {
+        resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter a table schema first.</p>";
+        return;
+      }
+
+      let seconds = 0;
+      resultDiv.innerHTML = `<p id="dq-loading-text">⏳ Generating data quality tests... (0s)</p>`;
+
+      dataQualityLoadingInterval = setInterval(() => {
+        seconds++;
+        const dots = ".".repeat((seconds % 4));
+        document.getElementById("dq-loading-text").innerText = 
+          `⏳ Generating data quality tests${dots} (${seconds}s)`;
+      }, 1000);
+
+      try {
+        const response = await fetch("/data-quality-tests-generator", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ schema: input })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+        clearInterval(dataQualityLoadingInterval);
+
+        if (data.output) {
+          resultDiv.style.color = "black";
+          resultDiv.innerHTML = `<pre style="text-align:left; white-space:pre-wrap; background:#f3f4f6; padding:10px; border-radius:6px;">${data.output}</pre>`;
+        } else {
+          resultDiv.innerHTML = "<p>⚠️ No tests returned from server.</p>";
+        }
+      } catch (error) {
+        clearInterval(dataQualityLoadingInterval);
+        resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
+      }
+    }
+
+    // (Other existing JS functions for test case, bug report, and data generator remain unchanged)
+let currentTableData = []; // store table data for copy/export
+
+  async function generateTestCases() {
+    const input = document.getElementById("testcase-input").value.trim();
+    const resultDiv = document.getElementById("testcase-result");
+    const actionsDiv = document.getElementById("testcase-actions");
+
+    if (!input) {
+      resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter a user story or requirement first.</p>";
+      actionsDiv.style.display = "none";
+      return;
+    }
+
+    let seconds = 0;
+    resultDiv.innerHTML = `<p id="loading-text">⏳ Generating test cases... (0s)</p>`;
+
+    // Dynamic waiting indicator
+    loadingInterval = setInterval(() => {
+      seconds++;
+      const dots = ".".repeat((seconds % 4)); // cycles from 0–3 dots
+      document.getElementById("loading-text").innerText = 
+        `⏳ Generating test plan${dots} (${seconds}s)`;
+    }, 1000);
+
+    actionsDiv.style.display = "none";
+
+    try {
+      const response = await fetch("/generate-test-cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_story: input })
+      });
+
+      if (!response.ok) throw new Error("Server error: " + response.status);
+
+      const data = await response.json();
+clearInterval(loadingInterval);
+
+      if (data.output) {
+        const { htmlTable, tableData } = markdownTableToHTML(data.output);
+        currentTableData = tableData;
+        resultDiv.innerHTML = htmlTable;
+        actionsDiv.style.display = "block"; // show copy/download buttons
+      } else {
+        resultDiv.innerHTML = "<p>⚠️ No test cases returned from server.</p>";
+      }
+    } catch (error) {
+      resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message}</p>`;
+      actionsDiv.style.display = "none";
+    }
+  }
+
+  // Convert Markdown to HTML + store data for copy/export
+  function markdownTableToHTML(markdown) {
+    const lines = markdown.trim().split("\n").filter(line => line.trim() && !line.startsWith("|-"));
+    const headers = lines[0].split("|").map(h => h.trim()).filter(h => h);
+    const rows = lines.slice(1).map(line =>
+      line.split("|").map(cell => cell.trim()).filter(cell => cell)
+    );
+
+    let table = "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%;'>";
+    table += "<thead><tr>" + headers.map(h => `<th style='background:#f3f4f6;'>${h}</th>`).join("") + "</tr></thead>";
+    table += "<tbody>";
+    rows.forEach(row => {
+      table += "<tr>" + row.map(c => `<td>${c}</td>`).join("") + "</tr>";
+    });
+    table += "</tbody></table>";
+
+    return { htmlTable: table, tableData: [headers, ...rows] };
+  }
+
+  // Copy table to clipboard
+  function copyTable() {
+    const text = currentTableData.map(row => row.join("\t")).join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      alert("✅ Table copied to clipboard!");
+    }).catch(err => {
+      alert("❌ Failed to copy: " + err);
+    });
+  }
+
+  // Download as CSV (Excel-compatible)
+  function downloadExcel() {
+    let csvContent = currentTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "test_cases.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+let bugReportTableData = [];
+let bugLoadingInterval;
+
+async function generateBugReport() {
+  const input = document.getElementById("bugreport-input").value.trim();
+  const resultDiv = document.getElementById("bugreport-result");
+  const actionsDiv = document.getElementById("bugreport-actions");
+
+  if (!input) {
+    resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter a bug description first.</p>";
+    actionsDiv.style.display = "none";
+    return;
+  }
+
+  let seconds = 0;
+  resultDiv.innerHTML = `<p id="bug-loading-text">⏳ Generating bug report... (0s)</p>`;
+  actionsDiv.style.display = "none";
+
+  // Dynamic waiting indicator
+  bugLoadingInterval = setInterval(() => {
+    seconds++;
+    const dots = ".".repeat((seconds % 4));
+    document.getElementById("bug-loading-text").innerText =
+      `⏳ Generating bug report${dots} (${seconds}s)`;
+  }, 1000);
+
+  try {
+    const response = await fetch("/generate-bug-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bugs: input })
+    });
+
+    if (!response.ok) throw new Error("Server error: " + response.status);
+
+    const data = await response.json();
+    clearInterval(bugLoadingInterval);
+
+    if (data.output) {
+      const { htmlTable, tableData } = markdownTableToHTML(data.output);
+      bugReportTableData = tableData;
+      resultDiv.innerHTML = htmlTable;
+      actionsDiv.style.display = "block";
+    } else {
+      resultDiv.innerHTML = "<p>⚠️ No bug report returned from server.</p>";
+    }
+  } catch (error) {
+    clearInterval(bugLoadingInterval);
+    resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
+    actionsDiv.style.display = "none";
+  }
+}
+
+// Copy bug report table
+function copyBugReport() {
+  const text = bugReportTableData.map(row => row.join("\t")).join("\n");
+  navigator.clipboard.writeText(text).then(() => {
+    alert("✅ Bug report table copied to clipboard!");
+  }).catch(err => {
+    alert("❌ Failed to copy: " + err);
+  });
+}
+
+// Download bug report as CSV
+function downloadBugReport() {
+  let csvContent = bugReportTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "bug_report.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+let dataTableData = [];
+let dataLoadingInterval;
+
+async function generateData() {
+  const input = document.getElementById("datagenerator-input").value.trim();
+  const resultDiv = document.getElementById("datagenerator-result");
+  const actionsDiv = document.getElementById("datagenerator-actions");
+
+  if (!input) {
+    resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter data requirements first.</p>";
+    actionsDiv.style.display = "none";
+    return;
+  }
+
+  let seconds = 0;
+  resultDiv.innerHTML = `<p id="data-loading-text">⏳ Generating data... (0s)</p>`;
+  actionsDiv.style.display = "none";
+
+  // Dynamic waiting indicator
+  dataLoadingInterval = setInterval(() => {
+    seconds++;
+    const dots = ".".repeat((seconds % 4));
+    document.getElementById("data-loading-text").innerText =
+      `⏳ Generating data${dots} (${seconds}s)`;
+  }, 1000);
+
+  try {
+    const response = await fetch("/generate-data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: input })
+    });
+
+    if (!response.ok) throw new Error("Server error: " + response.status);
+
+    const data = await response.json();
+    clearInterval(dataLoadingInterval);
+
+    if (data.output) {
+      const { htmlTable, tableData } = markdownTableToHTML(data.output);
+      dataTableData = tableData;
+      resultDiv.innerHTML = htmlTable;
+      actionsDiv.style.display = "block";
+    } else {
+      resultDiv.innerHTML = "<p>⚠️ No data returned from server.</p>";
+    }
+  } catch (error) {
+    clearInterval(dataLoadingInterval);
+    resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
+    actionsDiv.style.display = "none";
+  }
+}
+
+// Copy data table
+function copyData() {
+  const text = dataTableData.map(row => row.join("\t")).join("\n");
+  navigator.clipboard.writeText(text).then(() => {
+    alert("✅ Data table copied to clipboard!");
+  }).catch(err => {
+    alert("❌ Failed to copy: " + err);
+  });
+}
+
+// Download data as CSV (Excel-compatible)
+function downloadData() {
+  let csvContent = dataTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "generated_data.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+  </script>
+
+</body>
+</html>
+
       display: flex;
       height: 100vh;
     }
