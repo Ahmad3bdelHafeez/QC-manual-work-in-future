@@ -200,7 +200,7 @@ def generate_data_quality_tests():
     if not input:
         return jsonify({"error": "schema is required"}), 400
 
-    prompt = f"""You are a SQL data quality and testing expert.
+    prompt = f"""You are a mySQL data quality and testing expert.
     Given a table schema, table name, and list of columns with their data types, generate a comprehensive SQL validation script that covers both schema tests and data quality tests, returning a unified result set with the following columns:
     Check_Type | Dimension | Rule | Expectation | Failed_Records
 
@@ -277,6 +277,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
