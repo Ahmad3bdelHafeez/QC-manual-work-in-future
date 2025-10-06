@@ -191,45 +191,90 @@ input description: {input}"""
     print({"message": "Dummy data generated", "output": result})
     return jsonify({"message": "Dummy data generated", "output": result})
 
-@app.route('/generate-data', methods=['POST'])
-def generate_data():
+@app.route('/generate-data-quality-tests', methods=['POST'])
+def generate_data_quality_tests():
     data = request.json
-    input = data.get('input')
+    input = data.get('schema')
     print(input)
 
     if not input:
-        return jsonify({"error": "input is required"}), 400
+        return jsonify({"error": "schema is required"}), 400
 
-    prompt = f"""You are a dummy data generator.  
-I will provide you with an input description.  
-You must always produce only a table as output, with exactly the column names and format I specify in the description.  
+    prompt = f"""You are a SQL data quality and testing expert.
+    Given a table schema, table name, and list of columns with their data types, generate a comprehensive SQL validation script that covers both schema tests and data quality tests, returning a unified result set with the following columns:
+    Check_Type | Dimension | Rule | Expectation | Failed_Records
 
-Rules:  
-- Output must be a table only (no explanations, no extra text).  
-- Column headers must exactly match what I specify.  
-- Each row must contain one complete and realistic data record.  
-- Number of rows = as specified in my input.  
-- Data must look realistic (not just random gibberish).  
-- Ensure uniqueness where it makes sense (e.g., IDs, emails).  
+    Your task:
 
-Example inputs:  
-1. "10 questions about employees, their salaries and departments → table with 2 columns (question #, question)"  
-2. "emails and passwords → table with 2 columns (email, password), 15 rows"  
-3. "product codes and prices → table with 2 columns (product_code, price), 20 rows"  
+    Schema Tests
 
-Now wait for my input and generate the table accordingly. 
+    Row count test → Verify expected record count (use a placeholder number like 2000).
 
-input description: {input}"""
+    Column count test → Verify number of columns matches the provided schema.
+
+    Column names and types test → Verify each column matches its expected data type.
+
+    Data Quality Tests
+
+    Uniqueness: Check if key columns (like IDs) are unique.
+
+    Completeness: Check for nulls in critical fields (IDs, required attributes, metrics).
+
+    Validity: Based on data type and semantic meaning, create range and categorical validation rules:
+
+    For numeric columns: specify realistic ranges (e.g., 0–100 for percentages or scores).
+
+    For categorical columns: specify allowed values (e.g., Gender: Male/Female/Other).
+
+    Consistency: Create logical dependency rules (e.g., if attendance < 50, exam_score < 95).
+
+    Use UNION ALL between each test block.
+
+    Include descriptive comments (e.g., -- =======================).
+
+    Use the given schema and table name consistently.
+
+    The SQL dialect should be compatible with TeradataSQL (or ANSI SQL if unspecified).
+
+    Input Example
+    {input}
+
+
+    Output Format Should be the script only without sql word
+
+    Return a single SQL script that includes:
+
+    Clear comment sections (-- SCHEMA TESTS, -- DATA QUALITY TESTS)
+
+    A combined query using UNION ALL
+
+    Proper CASE logic for validation rules
+
+    Friendly readable expectations (e.g., 'Attendance must be between 0 and 100')
+
+    The final output should look similar in structure to the following:
+    -- =======================
+    -- SCHEMA TESTS
+    -- =======================
+    SELECT ...
+    UNION ALL
+    ...
+    -- =======================
+    -- DATA QUALITY TESTS
+    -- =======================
+    SELECT ...
+    """
     result = call_mistral_model(prompt)
     print(result)
-    print({"message": "Dummy data generated", "output": result})
-    return jsonify({"message": "Dummy data generated", "output": result})
+    print({"message": "Data Quality Tests generated", "output": result})
+    return jsonify({"message": "Data Quality Tests generated", "output": result})
 # Serve home page
 @app.route("/", methods=["GET"])
 def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
