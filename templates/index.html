@@ -265,7 +265,7 @@
       }, 1000);
 
       try {
-        const response = await fetch("/data-quality-tests-generator", {
+        const response = await fetch("/generate-data-quality-tests", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ schema: input })
