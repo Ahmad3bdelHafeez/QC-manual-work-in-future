@@ -206,52 +206,48 @@ def generate_data_quality_tests():
 
     Your task:
 
-    Schema Tests
+    Schema Tests:
 
-    Row count test → Verify expected record count (use a placeholder number like 2000).
+    - Row count test → Verify expected record count (use a placeholder number like 2000).
 
-    Column count test → Verify number of columns matches the provided schema.
+    - Column count test → Verify number of columns matches the provided schema.
 
-    Column names and types test → Verify each column matches its expected data type.
+    - Column names and types test → Verify each column matches its expected data type.
 
-    Data Quality Tests
+    Data Quality Tests:
 
-    Uniqueness: Check if key columns (like IDs) are unique.
+    - Uniqueness: Check if key columns (like IDs) are unique.
 
-    Completeness: Check for nulls in critical fields (IDs, required attributes, metrics).
+    - Completeness: Check for nulls in critical fields (IDs, required attributes, metrics).
 
-    Validity: Based on data type and semantic meaning, create range and categorical validation rules:
+    - Validity: Based on data type and semantic meaning, create range and categorical validation rules:
 
-    For numeric columns: specify realistic ranges (e.g., 0–100 for percentages or scores).
+    - For numeric columns: specify realistic ranges (e.g., 0–100 for percentages or scores).
 
-    For categorical columns: specify allowed values (e.g., Gender: Male/Female/Other).
+    - For categorical columns: specify allowed values (e.g., Gender: Male/Female/Other).
 
-    Consistency: Create logical dependency rules (e.g., if attendance < 50, exam_score < 95).
+    - Consistency: Create logical dependency rules (e.g., if attendance < 50, exam_score < 95).
 
-    Use UNION ALL between each test block.
+    - Use UNION ALL between each test block.
 
-    Include descriptive comments (e.g., -- =======================).
+    - Include descriptive comments (e.g., -- =======================).
 
-    Use the given schema and table name consistently.
+    - Use the given schema and table name consistently.
 
-    The SQL dialect should be compatible with TeradataSQL (or ANSI SQL if unspecified).
-
-    Input Example
+    Input Example:
     
     {input}
 
 
-    Output Format Should be the script only without sql word
+    Output Format Should be the script only without sql word, Return a single SQL script that includes:
 
-    Return a single SQL script that includes:
+    - Clear comment sections (-- SCHEMA TESTS, -- DATA QUALITY TESTS)
 
-    Clear comment sections (-- SCHEMA TESTS, -- DATA QUALITY TESTS)
+    - A combined query using UNION ALL
 
-    A combined query using UNION ALL
+    - Proper CASE logic for validation rules
 
-    Proper CASE logic for validation rules
-
-    Friendly readable expectations (e.g., 'Attendance must be between 0 and 100')
+    - Friendly readable expectations (e.g., 'Attendance must be between 0 and 100')
 
     The final output should look similar in structure to the following:
     -- =======================
@@ -277,6 +273,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
