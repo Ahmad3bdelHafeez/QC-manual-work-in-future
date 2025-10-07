@@ -205,7 +205,7 @@ def generate_data_quality_tests():
     Check_Type | Dimension | Rule | Expectation | Failed_Records
 
     Check_Type (e.g., Schema, Data,...)
-    Dimension (e.g., Completeness, Integrity, Uniqueness, Validity, Consistency,...)
+    Dimension must be in (e.g., Completeness, Integrity, Uniqueness, Validity, Consistency,...)
     Rule (e.g. Invalid mental_health_rating, Attendance<50 but Exam>95,...)
     Expectation (e.g. Diet quality must be Poor, Average, or Good, If sleep_hours<3, mental_health_rating should not exceed 9,...)
     Failed_Records (e.g. number of failed records)
@@ -279,6 +279,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
