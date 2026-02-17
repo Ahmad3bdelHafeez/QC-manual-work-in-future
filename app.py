@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 CORS(app)  # allow all origins
 ANTHROPIC_API_KEY = "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"
-client = Anthropic(api_key=ANTHROPIC_API_KEY))
+client = Anthropic(api_key=ANTHROPIC_API_KEY)
 MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
 def run_browser_task(message: str) -> dict:
     """
@@ -376,6 +376,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
