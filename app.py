@@ -10,6 +10,7 @@ from flask import send_from_directory
 
 from anthropic import Anthropic
 import json
+import time
 import asyncio
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -24,6 +25,24 @@ MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
 MCP_URL       = "https://playwright-mcp-s8mf.onrender.com/sse"
 MISTRAL_KEY   = "dGA15ms96fjMa6vGmXO7veWlAKInqWVm"
 MISTRAL_MODEL = "mistral-large-latest"
+
+MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
+
+
+def mistral_call_with_retry(client, **kwargs):
+    """Call Mistral with exponential backoff on rate limit errors."""
+    for attempt in range(5):
+        try:
+            return client.chat.complete(**kwargs)
+        except Exception as e:
+            if "rate_limited" in str(e) or "1300" in str(e):
+                wait = 2 ** attempt   # 1s, 2s, 4s, 8s, 16s
+                print(f"Rate limited — retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+    raise RuntimeError("Mistral rate limit exceeded after retries.")
+
 
 async def run_agent(messages):
     client = Mistral(api_key=MISTRAL_KEY)
@@ -48,20 +67,22 @@ async def run_agent(messages):
 
             # Agentic loop
             for _ in range(10):
-                response = client.chat.complete(
+                response = mistral_call_with_retry(
+                    client,
                     model=MISTRAL_MODEL,
                     messages=messages,
                     tools=tools,
                     tool_choice="auto",
                 )
                 msg = response.choices[0].message
-                messages.append({"role": "assistant", "content": msg.content or ""})
 
                 if not msg.tool_calls:
-                    return msg.content  # Done
+                    # Done — no tool calls means final answer
+                    messages.append({"role": "assistant", "content": msg.content or ""})
+                    return msg.content
 
-                # Append the full assistant message with tool_calls intact
-                messages[-1] = {
+                # Append assistant message with tool_calls intact (required by Mistral)
+                messages.append({
                     "role": "assistant",
                     "content": msg.content or "",
                     "tool_calls": [
@@ -75,16 +96,25 @@ async def run_agent(messages):
                         }
                         for tc in msg.tool_calls
                     ],
-                }
+                })
 
                 # Call each tool via MCP and collect results
                 for tc in msg.tool_calls:
-                    args = json.loads(tc.function.arguments) if isinstance(tc.function.arguments, str) else tc.function.arguments
+                    args = (
+                        json.loads(tc.function.arguments)
+                        if isinstance(tc.function.arguments, str)
+                        else tc.function.arguments
+                    )
                     result = await session.call_tool(tc.function.name, args)
                     result_text = "\n".join(
                         b.text if hasattr(b, "text") else str(b)
                         for b in result.content
                     )
+
+                    # Truncate to avoid burning tokens on huge snapshots
+                    if len(result_text) > MAX_TOOL_RESULT_CHARS:
+                        result_text = result_text[:MAX_TOOL_RESULT_CHARS] + "\n...[truncated]"
+
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
@@ -469,6 +499,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
