@@ -9,6 +9,7 @@ from flask_cors import CORS
 from flask import send_from_directory
 
 from anthropic import Anthropic
+import json
 import asyncio
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -450,6 +451,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
