@@ -8,8 +8,105 @@ from mistralai import Mistral
 from flask_cors import CORS
 from flask import send_from_directory
 
+from anthropic import Anthropic
+from dotenv import load_dotenv
+
 app = Flask(__name__)
 CORS(app)  # allow all origins
+ANTHROPIC_API_KEY = "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"
+client = Anthropic(api_key=ANTHROPIC_API_KEY))
+MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
+def run_browser_task(message: str) -> dict:
+    """
+    Takes a plain English message, sends it to Claude with Playwright MCP,
+    and returns the result.
+    """
+    try:
+        print(f"🚀 Running task: {message}")
+
+        response = client.beta.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=4096,
+            betas=["mcp-client-2025-04-04"],
+            mcp_servers=[
+                {
+                    "type": "url",
+                    "url": MCP_SERVER_URL,
+                    "name": "playwright"
+                }
+            ],
+            messages=[
+                {
+                    "role": "user",
+                    "content": message
+                }
+            ]
+        )
+
+        # Extract text result
+        result_text = "\n".join(
+            block.text
+            for block in response.content
+            if block.type == "text"
+        )
+
+        # Extract tools used
+        tools_used = [
+            {
+                "tool": block.name,
+                "input": block.input
+            }
+            for block in response.content
+            if block.type == "tool_use"
+        ]
+
+        return {
+            "success": True,
+            "result": result_text,
+            "tools_used": tools_used,
+            "stop_reason": response.stop_reason,
+            "usage": {
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens
+            }
+        }
+
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@app.route("/execute", methods=["POST"])
+def run_execution_task():
+    """
+    POST /run
+    Body: { "message": "go to google.com and search for..." }
+    """
+    data = request.get_json()
+
+    if not data or "message" not in data:
+        return jsonify({
+            "success": False,
+            "error": "Request body must include a 'message' field"
+        }), 400
+
+    message = data["message"].strip()
+
+    if not message:
+        return jsonify({
+            "success": False,
+            "error": "'message' cannot be empty"
+        }), 400
+
+    result = run_browser_task(message)
+
+    status_code = 200 if result["success"] else 500
+    return jsonify(result), status_code
+
+
 @app.route("/download/<filename>")
 def download_file(filename):
     return send_from_directory("/tmp", filename, as_attachment=True)
@@ -279,6 +376,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
