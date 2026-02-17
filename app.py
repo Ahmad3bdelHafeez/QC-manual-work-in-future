@@ -60,7 +60,24 @@ async def run_agent(messages):
                 if not msg.tool_calls:
                     return msg.content  # Done
 
-                # Call each tool via MCP and feed results back
+                # Append the full assistant message with tool_calls intact
+                messages[-1] = {
+                    "role": "assistant",
+                    "content": msg.content or "",
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            },
+                        }
+                        for tc in msg.tool_calls
+                    ],
+                }
+
+                # Call each tool via MCP and collect results
                 for tc in msg.tool_calls:
                     args = json.loads(tc.function.arguments) if isinstance(tc.function.arguments, str) else tc.function.arguments
                     result = await session.call_tool(tc.function.name, args)
@@ -71,6 +88,7 @@ async def run_agent(messages):
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
+                        "name": tc.function.name,
                         "content": result_text,
                     })
 
@@ -451,6 +469,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
