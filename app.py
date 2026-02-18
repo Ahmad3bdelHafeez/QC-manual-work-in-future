@@ -233,7 +233,7 @@ def execute_mistral():
     video_name = f"agent_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
     video_path = os.path.join(VIDEO_DIR, video_name)
     has_video  = build_video(steps, video_path)
-
+    print(f"{steps}")
     # Strip screenshots from JSON response (they're in the video)
     clean_steps = [
         {"step": s["step_num"], "tool": s["name"], "args": s["args"], "result": s["result"]}
@@ -615,6 +615,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
