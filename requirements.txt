@@ -9,3 +9,6 @@ python-dotenv
 mcp
 reportlab
 opencv-python-headless
+pillow
+imageio
+imageio-ffmpeg
