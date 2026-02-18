@@ -66,47 +66,109 @@ def mistral_call_with_retry(client, **kwargs):
     raise RuntimeError("Mistral rate limit exceeded after retries.")
 
 
+async def take_screenshot(session, step_num):
+    """Try all known block formats the MCP server might return."""
+    try:
+        shot = await session.call_tool("browser_take_screenshot", {"type": "png"})
+        
+        print(f"[screenshot step {step_num}] blocks: {len(shot.content)}")
+        for i, block in enumerate(shot.content):
+            print(f"  block[{i}] type={type(block).__name__} attrs={[a for a in dir(block) if not a.startswith('_')]}")
+
+            # Format 1: block.data is raw base64
+            if hasattr(block, "data") and block.data:
+                print(f"  → got base64 via block.data ({len(block.data)} chars)")
+                return block.data
+
+            # Format 2: block.text is a data URI  "data:image/png;base64,..."
+            if hasattr(block, "text") and block.text and block.text.startswith("data:image"):
+                b64 = block.text.split(",", 1)[1]
+                print(f"  → got base64 via data URI ({len(b64)} chars)")
+                return b64
+
+            # Format 3: block.text is raw base64 (no prefix)
+            if hasattr(block, "text") and block.text and len(block.text) > 100:
+                try:
+                    base64.b64decode(block.text, validate=True)
+                    print(f"  → got raw base64 via block.text ({len(block.text)} chars)")
+                    return block.text
+                except Exception:
+                    pass
+
+            # Format 4: ImageContent / EmbeddedResource with nested data
+            if hasattr(block, "image") and block.image:
+                if hasattr(block.image, "data"):
+                    print(f"  → got base64 via block.image.data")
+                    return block.image.data
+                if hasattr(block.image, "url") and block.image.url.startswith("data:"):
+                    b64 = block.image.url.split(",", 1)[1]
+                    print(f"  → got base64 via block.image.url")
+                    return b64
+
+            # Format 5: dict-style block
+            if isinstance(block, dict):
+                for key in ("data", "image", "base64"):
+                    if block.get(key):
+                        print(f"  → got base64 via dict[{key}]")
+                        return block[key]
+
+        print(f"  ✗ no usable image found in any block")
+    except Exception as e:
+        print(f"  ✗ screenshot failed: {e}")
+    return None
+
+
+def decode_frame(b64_data):
+    """Decode base64 PNG/JPEG into an OpenCV frame, return None on failure."""
+    try:
+        raw   = base64.b64decode(b64_data)
+        arr   = np.frombuffer(raw, dtype=np.uint8)
+        frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if frame is not None:
+            print(f"  ✓ decoded frame {frame.shape}")
+        else:
+            print(f"  ✗ cv2.imdecode returned None (bad image data?)")
+        return frame
+    except Exception as e:
+        print(f"  ✗ decode_frame error: {e}")
+        return None
+
+
 def build_video(steps, video_path, fps=1):
-    """
-    Stitch base64 screenshots into an MP4.
-    Each frame is held for (1/fps) seconds.
-    Adds a label overlay showing the tool name on each frame.
-    """
     frames = []
     for step in steps:
         if not step.get("screenshot"):
+            print(f"[video] step {step['step_num']} has no screenshot, skipping")
             continue
-        img_data = base64.b64decode(step["screenshot"])
-        arr      = np.frombuffer(img_data, dtype=np.uint8)
-        frame    = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        frame = decode_frame(step["screenshot"])
         if frame is None:
             continue
 
-        # Resize to consistent 1280x720
         frame = cv2.resize(frame, (1280, 720))
 
-        # Overlay: dark banner at top
-        banner = frame.copy()
-        cv2.rectangle(banner, (0, 0), (1280, 48), (20, 20, 20), -1)
-        cv2.addWeighted(banner, 0.75, frame, 0.25, 0, frame)
-
-        label = f"Step {step['step_num']}  |  {step['name']}  |  {json.dumps(step['args'])}"
-        label = label[:110]  # cap length so it fits
+        # Overlay banner
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (1280, 48), (20, 20, 20), -1)
+        cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+        label = f"Step {step['step_num']}  |  {step['name']}  |  {json.dumps(step['args'])}"[:110]
         cv2.putText(frame, label, (12, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 230, 150), 1, cv2.LINE_AA)
 
         frames.append(frame)
 
+    print(f"[video] total usable frames: {len(frames)}")
     if not frames:
         return False
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out    = cv2.VideoWriter(video_path, fourcc, fps, (1280, 720))
     for frame in frames:
-        # Hold each frame for 2 seconds (2 * fps frames)
         for _ in range(max(1, 2 * fps)):
             out.write(frame)
     out.release()
-    return True
+
+    size = os.path.getsize(video_path)
+    print(f"[video] written to {video_path} ({size} bytes)")
+    return size > 1000  # sanity check — empty videos are ~1KB
 
 
 async def run_agent(messages):
@@ -175,19 +237,8 @@ async def run_agent(messages):
                     if len(result_text) > MAX_TOOL_RESULT_CHARS:
                         result_text = result_text[:MAX_TOOL_RESULT_CHARS] + "\n...[truncated]"
 
-                    # Screenshot after every tool call
-                    screenshot_b64 = None
-                    try:
-                        shot = await session.call_tool("browser_take_screenshot", {"type": "png"})
-                        for block in shot.content:
-                            if hasattr(block, "data"):
-                                screenshot_b64 = block.data
-                                break
-                            elif hasattr(block, "text") and block.text.startswith("data:image"):
-                                screenshot_b64 = block.text.split(",", 1)[1]
-                                break
-                    except Exception:
-                        pass
+                    # Take screenshot
+                    screenshot_b64 = await take_screenshot(session, len(steps) + 1)
 
                     steps.append({
                         "step_num":   len(steps) + 1,
@@ -605,6 +656,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
