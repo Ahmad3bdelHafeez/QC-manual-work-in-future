@@ -16,6 +16,25 @@ from mcp import ClientSession
 from mcp.client.sse import sse_client
 from dotenv import load_dotenv
 
+
+import base64
+import io
+import json
+import asyncio
+import os
+import time
+from datetime import datetime
+from flask import Flask, request, jsonify, send_file
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+from mistralai import Mistral
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, HRFlowable
+from reportlab.lib.enums import TA_LEFT
+
 app = Flask(__name__)
 CORS(app)  # allow all origins
 ANTHROPIC_API_KEY = "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" #"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"
@@ -29,6 +48,7 @@ MISTRAL_MODEL = "mistral-large-latest"
 MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
 
 
+
 def mistral_call_with_retry(client, **kwargs):
     """Call Mistral with exponential backoff on rate limit errors."""
     for attempt in range(5):
@@ -36,7 +56,7 @@ def mistral_call_with_retry(client, **kwargs):
             return client.chat.complete(**kwargs)
         except Exception as e:
             if "rate_limited" in str(e) or "1300" in str(e):
-                wait = 2 ** attempt   # 1s, 2s, 4s, 8s, 16s
+                wait = 2 ** attempt
                 print(f"Rate limited — retrying in {wait}s...")
                 time.sleep(wait)
             else:
@@ -44,8 +64,80 @@ def mistral_call_with_retry(client, **kwargs):
     raise RuntimeError("Mistral rate limit exceeded after retries.")
 
 
+def build_pdf(prompt, steps, answer):
+    """
+    Build a PDF report from the agent steps and return it as a BytesIO buffer.
+    Each step contains: tool name, args, result text, and optionally a screenshot.
+    """
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=2*cm, rightMargin=2*cm,
+        topMargin=2*cm, bottomMargin=2*cm,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style   = ParagraphStyle("Title",   fontSize=18, fontName="Helvetica-Bold", textColor=colors.HexColor("#1a1a2e"), spaceAfter=6)
+    meta_style    = ParagraphStyle("Meta",    fontSize=9,  fontName="Helvetica",      textColor=colors.grey, spaceAfter=16)
+    prompt_style  = ParagraphStyle("Prompt",  fontSize=11, fontName="Helvetica",      textColor=colors.HexColor("#333333"), backColor=colors.HexColor("#f0f4ff"), borderPadding=8, spaceAfter=20)
+    step_style    = ParagraphStyle("Step",    fontSize=11, fontName="Helvetica-Bold", textColor=colors.HexColor("#2d6a4f"), spaceAfter=4)
+    args_style    = ParagraphStyle("Args",    fontSize=9,  fontName="Helvetica",      textColor=colors.HexColor("#555555"), spaceAfter=6)
+    result_style  = ParagraphStyle("Result",  fontSize=8,  fontName="Courier",        textColor=colors.HexColor("#444444"), backColor=colors.HexColor("#f9f9f9"), borderPadding=6, spaceAfter=10, leading=12)
+    answer_style  = ParagraphStyle("Answer",  fontSize=11, fontName="Helvetica",      textColor=colors.HexColor("#1a1a2e"), backColor=colors.HexColor("#e8f5e9"), borderPadding=10, spaceAfter=6, leading=16)
+
+    story = []
+
+    # Header
+    story.append(Paragraph("Mistral × Playwright — Agent Report", title_style))
+    story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", meta_style))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
+    story.append(Spacer(1, 12))
+
+    # Prompt
+    story.append(Paragraph("<b>Prompt:</b>", styles["Normal"]))
+    story.append(Paragraph(prompt, prompt_style))
+
+    # Steps
+    story.append(Paragraph(f"<b>Execution Steps ({len(steps)} tool calls)</b>", styles["Heading2"]))
+    story.append(Spacer(1, 8))
+
+    for i, step in enumerate(steps, 1):
+        story.append(Paragraph(f"Step {i} — {step['name']}", step_style))
+        story.append(Paragraph(f"Args: {json.dumps(step['args'], indent=2)}", args_style))
+
+        if step.get("result"):
+            safe_result = step["result"].replace("<", "&lt;").replace(">", "&gt;")
+            story.append(Paragraph(safe_result, result_style))
+
+        # Embed screenshot if present
+        if step.get("screenshot"):
+            try:
+                img_data = base64.b64decode(step["screenshot"])
+                img_buf  = io.BytesIO(img_data)
+                img      = Image(img_buf, width=16*cm, height=9*cm)
+                img.hAlign = "LEFT"
+                story.append(img)
+            except Exception:
+                pass
+
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#eeeeee")))
+        story.append(Spacer(1, 10))
+
+    # Final answer
+    story.append(Spacer(1, 8))
+    story.append(Paragraph("<b>Final Answer</b>", styles["Heading2"]))
+    safe_answer = (answer or "").replace("<", "&lt;").replace(">", "&gt;")
+    story.append(Paragraph(safe_answer, answer_style))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+
 async def run_agent(messages):
     client = Mistral(api_key=MISTRAL_KEY)
+    steps  = []   # collect steps for PDF
 
     async with sse_client(MCP_URL) as (read, write):
         async with ClientSession(read, write) as session:
@@ -77,9 +169,8 @@ async def run_agent(messages):
                 msg = response.choices[0].message
 
                 if not msg.tool_calls:
-                    # Done — no tool calls means final answer
                     messages.append({"role": "assistant", "content": msg.content or ""})
-                    return msg.content
+                    return msg.content, steps
 
                 # Append assistant message with tool_calls intact (required by Mistral)
                 messages.append({
@@ -105,29 +196,49 @@ async def run_agent(messages):
                         if isinstance(tc.function.arguments, str)
                         else tc.function.arguments
                     )
+
                     result = await session.call_tool(tc.function.name, args)
                     result_text = "\n".join(
                         b.text if hasattr(b, "text") else str(b)
                         for b in result.content
                     )
-
-                    # Truncate to avoid burning tokens on huge snapshots
                     if len(result_text) > MAX_TOOL_RESULT_CHARS:
                         result_text = result_text[:MAX_TOOL_RESULT_CHARS] + "\n...[truncated]"
 
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "name": tc.function.name,
-                        "content": result_text,
+                    # Take a screenshot after every tool call
+                    screenshot_b64 = None
+                    try:
+                        shot = await session.call_tool("browser_take_screenshot", {"type": "png"})
+                        for block in shot.content:
+                            if hasattr(block, "data"):
+                                screenshot_b64 = block.data
+                                break
+                            elif hasattr(block, "text") and block.text.startswith("data:image"):
+                                screenshot_b64 = block.text.split(",", 1)[1]
+                                break
+                    except Exception:
+                        pass
+
+                    steps.append({
+                        "name":       tc.function.name,
+                        "args":       args,
+                        "result":     result_text,
+                        "screenshot": screenshot_b64,
                     })
 
-            return "Max turns reached."
+                    messages.append({
+                        "role":        "tool",
+                        "tool_call_id": tc.id,
+                        "name":        tc.function.name,
+                        "content":     result_text,
+                    })
+
+            return "Max turns reached.", steps
 
 
 @app.post("/execute_mistral")
 def execute_mistral():
-    body = request.get_json()
+    body     = request.get_json()
     messages = body.get("messages", [])
 
     if not messages:
@@ -135,9 +246,17 @@ def execute_mistral():
     if not MISTRAL_KEY:
         return jsonify({"error": "MISTRAL_API_KEY not set"}), 500
 
-    answer = asyncio.run(run_agent(messages))
-    return jsonify({"answer": answer})
+    prompt         = messages[0].get("content", "Agent run")
+    answer, steps  = asyncio.run(run_agent(messages))
 
+    # Build and return the PDF
+    pdf_buffer = build_pdf(prompt, steps, answer)
+    return send_file(
+        pdf_buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"agent_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+    )
 
 def run_browser_task(message: str) -> dict:
     """
@@ -499,6 +618,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
