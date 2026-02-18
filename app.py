@@ -158,7 +158,7 @@ async def run_agent(messages):
             ]
 
             # Agentic loop
-            for _ in range(10):
+            for _ in range(30):
                 response = mistral_call_with_retry(
                     client,
                     model=MISTRAL_MODEL,
@@ -618,6 +618,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
