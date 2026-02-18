@@ -23,17 +23,14 @@ import json
 import asyncio
 import os
 import time
+import tempfile
 from datetime import datetime
 from flask import Flask, request, jsonify, send_file
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from mistralai import Mistral
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import cm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, HRFlowable
-from reportlab.lib.enums import TA_LEFT
+import cv2
+import numpy as np
 
 app = Flask(__name__)
 CORS(app)  # allow all origins
@@ -47,6 +44,11 @@ MISTRAL_MODEL = "mistral-large-latest"
 
 MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
 
+
+
+MAX_TOOL_RESULT_CHARS = 3000
+VIDEO_DIR = "tmp"
+os.makedirs(VIDEO_DIR, exist_ok=True)
 
 
 def mistral_call_with_retry(client, **kwargs):
@@ -64,86 +66,57 @@ def mistral_call_with_retry(client, **kwargs):
     raise RuntimeError("Mistral rate limit exceeded after retries.")
 
 
-def build_pdf(prompt, steps, answer):
+def build_video(steps, video_path, fps=1):
     """
-    Build a PDF report from the agent steps and return it as a BytesIO buffer.
-    Each step contains: tool name, args, result text, and optionally a screenshot.
+    Stitch base64 screenshots into an MP4.
+    Each frame is held for (1/fps) seconds.
+    Adds a label overlay showing the tool name on each frame.
     """
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        leftMargin=2*cm, rightMargin=2*cm,
-        topMargin=2*cm, bottomMargin=2*cm,
-    )
+    frames = []
+    for step in steps:
+        if not step.get("screenshot"):
+            continue
+        img_data = base64.b64decode(step["screenshot"])
+        arr      = np.frombuffer(img_data, dtype=np.uint8)
+        frame    = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if frame is None:
+            continue
 
-    styles = getSampleStyleSheet()
-    title_style   = ParagraphStyle("Title",   fontSize=18, fontName="Helvetica-Bold", textColor=colors.HexColor("#1a1a2e"), spaceAfter=6)
-    meta_style    = ParagraphStyle("Meta",    fontSize=9,  fontName="Helvetica",      textColor=colors.grey, spaceAfter=16)
-    prompt_style  = ParagraphStyle("Prompt",  fontSize=11, fontName="Helvetica",      textColor=colors.HexColor("#333333"), backColor=colors.HexColor("#f0f4ff"), borderPadding=8, spaceAfter=20)
-    step_style    = ParagraphStyle("Step",    fontSize=11, fontName="Helvetica-Bold", textColor=colors.HexColor("#2d6a4f"), spaceAfter=4)
-    args_style    = ParagraphStyle("Args",    fontSize=9,  fontName="Helvetica",      textColor=colors.HexColor("#555555"), spaceAfter=6)
-    result_style  = ParagraphStyle("Result",  fontSize=8,  fontName="Courier",        textColor=colors.HexColor("#444444"), backColor=colors.HexColor("#f9f9f9"), borderPadding=6, spaceAfter=10, leading=12)
-    answer_style  = ParagraphStyle("Answer",  fontSize=11, fontName="Helvetica",      textColor=colors.HexColor("#1a1a2e"), backColor=colors.HexColor("#e8f5e9"), borderPadding=10, spaceAfter=6, leading=16)
+        # Resize to consistent 1280x720
+        frame = cv2.resize(frame, (1280, 720))
 
-    story = []
+        # Overlay: dark banner at top
+        banner = frame.copy()
+        cv2.rectangle(banner, (0, 0), (1280, 48), (20, 20, 20), -1)
+        cv2.addWeighted(banner, 0.75, frame, 0.25, 0, frame)
 
-    # Header
-    story.append(Paragraph("Mistral × Playwright — Agent Report", title_style))
-    story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", meta_style))
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
-    story.append(Spacer(1, 12))
+        label = f"Step {step['step_num']}  |  {step['name']}  |  {json.dumps(step['args'])}"
+        label = label[:110]  # cap length so it fits
+        cv2.putText(frame, label, (12, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 230, 150), 1, cv2.LINE_AA)
 
-    # Prompt
-    story.append(Paragraph("<b>Prompt:</b>", styles["Normal"]))
-    story.append(Paragraph(prompt, prompt_style))
+        frames.append(frame)
 
-    # Steps
-    story.append(Paragraph(f"<b>Execution Steps ({len(steps)} tool calls)</b>", styles["Heading2"]))
-    story.append(Spacer(1, 8))
+    if not frames:
+        return False
 
-    for i, step in enumerate(steps, 1):
-        story.append(Paragraph(f"Step {i} — {step['name']}", step_style))
-        story.append(Paragraph(f"Args: {json.dumps(step['args'], indent=2)}", args_style))
-
-        if step.get("result"):
-            safe_result = step["result"].replace("<", "&lt;").replace(">", "&gt;")
-            story.append(Paragraph(safe_result, result_style))
-
-        # Embed screenshot if present
-        if step.get("screenshot"):
-            try:
-                img_data = base64.b64decode(step["screenshot"])
-                img_buf  = io.BytesIO(img_data)
-                img      = Image(img_buf, width=16*cm, height=9*cm)
-                img.hAlign = "LEFT"
-                story.append(img)
-            except Exception:
-                pass
-
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#eeeeee")))
-        story.append(Spacer(1, 10))
-
-    # Final answer
-    story.append(Spacer(1, 8))
-    story.append(Paragraph("<b>Final Answer</b>", styles["Heading2"]))
-    safe_answer = (answer or "").replace("<", "&lt;").replace(">", "&gt;")
-    story.append(Paragraph(safe_answer, answer_style))
-
-    doc.build(story)
-    buffer.seek(0)
-    return buffer
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    out    = cv2.VideoWriter(video_path, fourcc, fps, (1280, 720))
+    for frame in frames:
+        # Hold each frame for 2 seconds (2 * fps frames)
+        for _ in range(max(1, 2 * fps)):
+            out.write(frame)
+    out.release()
+    return True
 
 
 async def run_agent(messages):
     client = Mistral(api_key=MISTRAL_KEY)
-    steps  = []   # collect steps for PDF
+    steps  = []
 
     async with sse_client(MCP_URL) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            # Fetch tools from MCP and convert to Mistral format
             mcp_tools = await session.list_tools()
             tools = [
                 {
@@ -157,8 +130,7 @@ async def run_agent(messages):
                 for t in mcp_tools.tools
             ]
 
-            # Agentic loop
-            for _ in range(30):
+            for _ in range(10):
                 response = mistral_call_with_retry(
                     client,
                     model=MISTRAL_MODEL,
@@ -172,7 +144,6 @@ async def run_agent(messages):
                     messages.append({"role": "assistant", "content": msg.content or ""})
                     return msg.content, steps
 
-                # Append assistant message with tool_calls intact (required by Mistral)
                 messages.append({
                     "role": "assistant",
                     "content": msg.content or "",
@@ -189,7 +160,6 @@ async def run_agent(messages):
                     ],
                 })
 
-                # Call each tool via MCP and collect results
                 for tc in msg.tool_calls:
                     args = (
                         json.loads(tc.function.arguments)
@@ -205,7 +175,7 @@ async def run_agent(messages):
                     if len(result_text) > MAX_TOOL_RESULT_CHARS:
                         result_text = result_text[:MAX_TOOL_RESULT_CHARS] + "\n...[truncated]"
 
-                    # Take a screenshot after every tool call
+                    # Screenshot after every tool call
                     screenshot_b64 = None
                     try:
                         shot = await session.call_tool("browser_take_screenshot", {"type": "png"})
@@ -220,6 +190,7 @@ async def run_agent(messages):
                         pass
 
                     steps.append({
+                        "step_num":   len(steps) + 1,
                         "name":       tc.function.name,
                         "args":       args,
                         "result":     result_text,
@@ -227,10 +198,10 @@ async def run_agent(messages):
                     })
 
                     messages.append({
-                        "role":        "tool",
+                        "role":         "tool",
                         "tool_call_id": tc.id,
-                        "name":        tc.function.name,
-                        "content":     result_text,
+                        "name":         tc.function.name,
+                        "content":      result_text,
                     })
 
             return "Max turns reached.", steps
@@ -246,18 +217,32 @@ def execute_mistral():
     if not MISTRAL_KEY:
         return jsonify({"error": "MISTRAL_API_KEY not set"}), 500
 
-    prompt         = messages[0].get("content", "Agent run")
-    answer, steps  = asyncio.run(run_agent(messages))
+    answer, steps = asyncio.run(run_agent(messages))
 
-    # Build and return the PDF
-    pdf_buffer = build_pdf(prompt, steps, answer)
-    return send_file(
-        pdf_buffer,
-        mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"agent_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-    )
+    # Build video
+    video_name = f"agent_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+    video_path = os.path.join(VIDEO_DIR, video_name)
+    has_video  = build_video(steps, video_path)
 
+    # Strip screenshots from JSON response (they're in the video)
+    clean_steps = [
+        {"step": s["step_num"], "tool": s["name"], "args": s["args"], "result": s["result"]}
+        for s in steps
+    ]
+
+    return jsonify({
+        "answer": answer,
+        "steps":  clean_steps,
+        "video":  f"/tmp/{video_name}" if has_video else None,
+    })
+
+
+@app.get("/tmp/<filename>")
+def get_video(filename):
+    path = os.path.join(VIDEO_DIR, filename)
+    if not os.path.exists(path):
+        return jsonify({"error": "not found"}), 404
+    return send_file(path, mimetype="video/mp4")
 def run_browser_task(message: str) -> dict:
     """
     Takes a plain English message, sends it to Claude with Playwright MCP,
@@ -618,6 +603,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
