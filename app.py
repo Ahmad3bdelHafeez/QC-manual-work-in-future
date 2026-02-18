@@ -18,12 +18,12 @@ from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)  # allow all origins
-ANTHROPIC_API_KEY = "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"
+ANTHROPIC_API_KEY = "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" #"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"
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
 MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
 
 MCP_URL       = "https://playwright-mcp-s8mf.onrender.com/sse"
-MISTRAL_KEY   = "dGA15ms96fjMa6vGmXO7veWlAKInqWVm"
+MISTRAL_KEY   = "jb0XySiEnvm0r7R3HwSAWvp0aIi80K1v" #"dGA15ms96fjMa6vGmXO7veWlAKInqWVm"
 MISTRAL_MODEL = "mistral-large-latest"
 
 MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
@@ -499,6 +499,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
