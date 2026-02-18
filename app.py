@@ -233,6 +233,7 @@ def execute_mistral():
     video_name = f"agent_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
     video_path = os.path.join(VIDEO_DIR, video_name)
     has_video  = build_video(steps, video_path)
+    print(has_video)
     print(f"{steps}")
     # Strip screenshots from JSON response (they're in the video)
     clean_steps = [
@@ -243,7 +244,7 @@ def execute_mistral():
     return jsonify({
         "answer": answer,
         "steps":  clean_steps,
-        "video":  f"/video/{video_name}" if has_video else None,
+        "video":  f"/tmp/{video_name}" if has_video else None,
     })
 
 
@@ -615,6 +616,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
