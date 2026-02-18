@@ -261,7 +261,7 @@ def get_video(filename):
     path = os.path.join(VIDEO_DIR, filename)
     if not os.path.exists(path):
         return jsonify({"error": "not found"}), 404
-    return send_file(filename, mimetype="video/mp4")
+    return send_file(path, mimetype="video/mp4")
 
 
 def run_browser_task(message: str) -> dict:
@@ -624,6 +624,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
