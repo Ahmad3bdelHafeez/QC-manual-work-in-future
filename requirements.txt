@@ -8,3 +8,4 @@ anthropic
 python-dotenv
 mcp
 reportlab
+opencv-python-headless
