@@ -47,7 +47,7 @@ MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
 
 
 MAX_TOOL_RESULT_CHARS = 3000
-VIDEO_DIR = "videos"
+VIDEO_DIR = "tmp"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
 
@@ -71,11 +71,6 @@ async def take_screenshot(session, step_num):
         shot = await session.call_tool("browser_take_screenshot", {"type": "png"})
         for block in shot.content:
             if type(block).__name__ == "ImageContent" and hasattr(block, "data") and block.data:
-                # Save first screenshot to disk so we can inspect it
-                if step_num == 1:
-                    with open("debug_screenshot.png", "wb") as f:
-                        f.write(base64.b64decode(block.data))
-                    print(f"  → saved debug_screenshot.png")
                 return block.data
     except Exception as e:
         print(f"  ✗ screenshot failed: {e}")
@@ -106,6 +101,7 @@ def build_video(steps, video_path, fps=1):
         frame = decode_frame(step["screenshot"])
         if frame is None:
             continue
+        print(f"[video] step {step['step_num']} has screenshot.")
 
         frame = cv2.resize(frame, (1280, 720))
 
@@ -619,6 +615,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
