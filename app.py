@@ -145,7 +145,11 @@ async def run_agent(messages):
     async with sse_client(MCP_URL) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
-
+            try:
+                await session.call_tool("browser_close", {})
+                print("[session] browser cleared")
+            except Exception as e:
+                print(f"[session] clear failed (ok if first run): {e}")
             mcp_tools = await session.list_tools()
             tools = [
                 {
@@ -624,6 +628,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
