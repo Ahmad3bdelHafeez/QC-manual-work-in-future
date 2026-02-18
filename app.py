@@ -71,6 +71,11 @@ async def take_screenshot(session, step_num):
         shot = await session.call_tool("browser_take_screenshot", {"type": "png"})
         for block in shot.content:
             if type(block).__name__ == "ImageContent" and hasattr(block, "data") and block.data:
+                # Save first screenshot to disk so we can inspect it
+                if step_num == 1:
+                    with open("debug_screenshot.png", "wb") as f:
+                        f.write(base64.b64decode(block.data))
+                    print(f"  → saved debug_screenshot.png")
                 return block.data
     except Exception as e:
         print(f"  ✗ screenshot failed: {e}")
@@ -614,6 +619,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
