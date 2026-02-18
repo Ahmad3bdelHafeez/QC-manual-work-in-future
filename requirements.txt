@@ -7,3 +7,4 @@ waitress~=3.0.2
 anthropic
 python-dotenv
 mcp
+reportlab
