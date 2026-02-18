@@ -99,7 +99,7 @@ def decode_frame(b64_data, step):
         return None
 
 
-def build_video(steps, video_path, fps=1):
+def build_video(steps, video_path, fps=24):
     frames = []
     for step in steps:
         if not step.get("screenshot"):
@@ -109,16 +109,29 @@ def build_video(steps, video_path, fps=1):
         if frame is None:
             continue
         # Hold each step for 2 seconds
-        for _ in range(2 * fps):
+        for _ in range(3 * fps):
             frames.append(frame)
         print(f"[video] step {step['step_num']} frame added {frame.shape}")
 
     print(f"[video] total frames: {len(frames)}")
     if not frames:
         return False
-
-    imageio.mimwrite(video_path, frames, fps=fps, codec="libx264", quality=8)
-
+    writer = imageio.get_writer(
+        video_path,
+        fps=fps,
+        codec="libx264",
+        pixelformat="yuv420p",   # broadest player compatibility
+        macro_block_size=16,
+        ffmpeg_params=[
+            "-preset", "fast",
+            "-crf", "23",
+            "-movflags", "+faststart",  # streaming-friendly
+        ],
+    )
+    # imageio.mimwrite(video_path, frames, fps=fps, codec="libx264", quality=8)
+    for frame in frames:
+        writer.append_data(frame)
+    writer.close()
     size = os.path.getsize(video_path)
     print(f"[video] written {video_path} ({size} bytes)")
     return size > 1000
@@ -610,6 +623,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
