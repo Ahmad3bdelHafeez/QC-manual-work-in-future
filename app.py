@@ -75,67 +75,62 @@ async def take_screenshot(session, step_num):
     except Exception as e:
         print(f"  ✗ screenshot failed: {e}")
     return None
-
+    
 from PIL import Image, ImageDraw, ImageFont
 import imageio
 import numpy as np
 
-def decode_frame(b64_data, step):
-    """Decode base64 PNG into a numpy frame using Pillow."""
+def decode_frame(b64_data):
+    """Decode base64 PNG/JPEG into an OpenCV frame, return None on failure."""
     try:
-        raw = base64.b64decode(b64_data)
-        img = Image.open(io.BytesIO(raw)).convert("RGB")
-        img = img.resize((1280, 720), Image.LANCZOS)
-
-        # Draw label banner
-        draw = ImageDraw.Draw(img)
-        draw.rectangle([(0, 0), (1280, 48)], fill=(20, 20, 20))
-        label = f"Step {step['step_num']}  |  {step['name']}  |  {json.dumps(step['args'])}"[:110]
-        draw.text((12, 14), label, fill=(100, 230, 150))
-
-        return np.array(img)
+        raw   = base64.b64decode(b64_data)
+        arr   = np.frombuffer(raw, dtype=np.uint8)
+        frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if frame is not None:
+            print(f"  ✓ decoded frame {frame.shape}")
+        else:
+            print(f"  ✗ cv2.imdecode returned None (bad image data?)")
+        return frame
     except Exception as e:
         print(f"  ✗ decode_frame error: {e}")
         return None
 
 
-def build_video(steps, video_path, fps=24):
+def build_video(steps, video_path, fps=1):
     frames = []
     for step in steps:
         if not step.get("screenshot"):
             print(f"[video] step {step['step_num']} has no screenshot, skipping")
             continue
-        frame = decode_frame(step["screenshot"], step)
+        frame = decode_frame(step["screenshot"])
         if frame is None:
             continue
-        # Hold each step for 2 seconds
-        for _ in range(3 * fps):
-            frames.append(frame)
-        print(f"[video] step {step['step_num']} frame added {frame.shape}")
 
-    print(f"[video] total frames: {len(frames)}")
+        frame = cv2.resize(frame, (1280, 720))
+
+        # Overlay banner
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (1280, 48), (20, 20, 20), -1)
+        cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+        label = f"Step {step['step_num']}  |  {step['name']}  |  {json.dumps(step['args'])}"[:110]
+        cv2.putText(frame, label, (12, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 230, 150), 1, cv2.LINE_AA)
+
+        frames.append(frame)
+
+    print(f"[video] total usable frames: {len(frames)}")
     if not frames:
         return False
-    writer = imageio.get_writer(
-        video_path,
-        fps=fps,
-        codec="libx264",
-        pixelformat="yuv420p",   # broadest player compatibility
-        macro_block_size=16,
-        ffmpeg_params=[
-            "-preset", "fast",
-            "-crf", "23",
-            "-movflags", "+faststart",  # streaming-friendly
-        ],
-    )
-    # imageio.mimwrite(video_path, frames, fps=fps, codec="libx264", quality=8)
-    for frame in frames:
-        writer.append_data(frame)
-    writer.close()
-    size = os.path.getsize(video_path)
-    print(f"[video] written {video_path} ({size} bytes)")
-    return size > 1000
 
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    out    = cv2.VideoWriter(video_path, fourcc, fps, (1280, 720))
+    for frame in frames:
+        for _ in range(max(1, 2 * fps)):
+            out.write(frame)
+    out.release()
+
+    size = os.path.getsize(video_path)
+    print(f"[video] written to {video_path} ({size} bytes)")
+    return size > 1000  # sanity check — empty videos are ~1KB
 
 async def run_agent(messages):
     client = Mistral(api_key=MISTRAL_KEY)
@@ -260,7 +255,7 @@ def get_video(filename):
     path = os.path.join(VIDEO_DIR, filename)
     if not os.path.exists(path):
         return jsonify({"error": "not found"}), 404
-    return send_file(path, mimetype="video/mp4")
+    return send_from_directory('/tmp', filename, as_attachment=True)
 
 
 def run_browser_task(message: str) -> dict:
@@ -623,6 +618,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
