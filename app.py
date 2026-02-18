@@ -352,7 +352,7 @@ def download_file(filename):
     return send_from_directory("/tmp", filename, as_attachment=True)
 
 def call_mistral_model(prompt):
-    client = Mistral(api_key="dGA15ms96fjMa6vGmXO7veWlAKInqWVm")
+    client = Mistral(api_key=MISTRAL_KEY)
     model = "mistral-large-2411"
     chat_response = client.chat.complete(
         model=model,
@@ -616,6 +616,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
