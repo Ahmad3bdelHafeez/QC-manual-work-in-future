@@ -47,7 +47,7 @@ MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
 
 
 MAX_TOOL_RESULT_CHARS = 3000
-VIDEO_DIR = "tmp"
+VIDEO_DIR = "videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
 
@@ -233,16 +233,18 @@ def execute_mistral():
     return jsonify({
         "answer": answer,
         "steps":  clean_steps,
-        "video":  f"/tmp/{video_name}" if has_video else None,
+        "video":  f"/video/{video_name}" if has_video else None,
     })
 
 
-@app.get("/tmp/<filename>")
+@app.get("/video/<filename>")
 def get_video(filename):
     path = os.path.join(VIDEO_DIR, filename)
     if not os.path.exists(path):
         return jsonify({"error": "not found"}), 404
     return send_file(path, mimetype="video/mp4")
+
+
 def run_browser_task(message: str) -> dict:
     """
     Takes a plain English message, sends it to Claude with Playwright MCP,
@@ -603,6 +605,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
