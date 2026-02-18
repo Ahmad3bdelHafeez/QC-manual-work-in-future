@@ -138,6 +138,39 @@ def build_video(steps, video_path, fps=24):
     print(f"[video] written {video_path} ({size} bytes)")
     return size > 1000
 
+
+async def clear_browser_session(session):
+    """Hard reset: blank page + clear all storage and cookies."""
+    try:
+        # Navigate to blank to kill any active page
+        await session.call_tool("browser_navigate", {"url": "about:blank"})
+        print("[session] navigated to about:blank")
+    except Exception as e:
+        print(f"[session] navigate blank failed: {e}")
+
+    try:
+        # Clear cookies
+        await session.call_tool("browser_delete_cookies", {})
+        print("[session] cookies cleared")
+    except Exception as e:
+        print(f"[session] clear cookies failed: {e}")
+
+    try:
+        # Clear local/session storage via JS
+        await session.call_tool("browser_evaluate", {
+            "function": "() => { localStorage.clear(); sessionStorage.clear(); }"
+        })
+        print("[session] storage cleared")
+    except Exception as e:
+        print(f"[session] clear storage failed: {e}")
+
+    try:
+        # Close any extra tabs, leave only one
+        await session.call_tool("browser_close", {})
+        print("[session] browser closed")
+    except Exception as e:
+        print(f"[session] browser_close failed: {e}")
+
 async def run_agent(messages):
     client = Mistral(api_key=MISTRAL_KEY)
     steps  = []
@@ -145,11 +178,8 @@ async def run_agent(messages):
     async with sse_client(MCP_URL) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
-            try:
-                await session.call_tool("browser_close", {})
-                print("[session] browser cleared")
-            except Exception as e:
-                print(f"[session] clear failed (ok if first run): {e}")
+            # Hard reset before every run
+            await clear_browser_session(session)
             mcp_tools = await session.list_tools()
             tools = [
                 {
@@ -628,6 +658,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
