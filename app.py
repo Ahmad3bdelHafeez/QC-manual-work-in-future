@@ -67,56 +67,14 @@ def mistral_call_with_retry(client, **kwargs):
 
 
 async def take_screenshot(session, step_num):
-    """Try all known block formats the MCP server might return."""
     try:
         shot = await session.call_tool("browser_take_screenshot", {"type": "png"})
-        
-        print(f"[screenshot step {step_num}] blocks: {len(shot.content)}")
-        for i, block in enumerate(shot.content):
-            print(f"  block[{i}] type={type(block).__name__} attrs={[a for a in dir(block) if not a.startswith('_')]}")
-
-            # Format 1: block.data is raw base64
-            if hasattr(block, "data") and block.data:
-                print(f"  → got base64 via block.data ({len(block.data)} chars)")
+        for block in shot.content:
+            if type(block).__name__ == "ImageContent" and hasattr(block, "data") and block.data:
                 return block.data
-
-            # Format 2: block.text is a data URI  "data:image/png;base64,..."
-            if hasattr(block, "text") and block.text and block.text.startswith("data:image"):
-                b64 = block.text.split(",", 1)[1]
-                print(f"  → got base64 via data URI ({len(b64)} chars)")
-                return b64
-
-            # Format 3: block.text is raw base64 (no prefix)
-            if hasattr(block, "text") and block.text and len(block.text) > 100:
-                try:
-                    base64.b64decode(block.text, validate=True)
-                    print(f"  → got raw base64 via block.text ({len(block.text)} chars)")
-                    return block.text
-                except Exception:
-                    pass
-
-            # Format 4: ImageContent / EmbeddedResource with nested data
-            if hasattr(block, "image") and block.image:
-                if hasattr(block.image, "data"):
-                    print(f"  → got base64 via block.image.data")
-                    return block.image.data
-                if hasattr(block.image, "url") and block.image.url.startswith("data:"):
-                    b64 = block.image.url.split(",", 1)[1]
-                    print(f"  → got base64 via block.image.url")
-                    return b64
-
-            # Format 5: dict-style block
-            if isinstance(block, dict):
-                for key in ("data", "image", "base64"):
-                    if block.get(key):
-                        print(f"  → got base64 via dict[{key}]")
-                        return block[key]
-
-        print(f"  ✗ no usable image found in any block")
     except Exception as e:
         print(f"  ✗ screenshot failed: {e}")
     return None
-
 
 def decode_frame(b64_data):
     """Decode base64 PNG/JPEG into an OpenCV frame, return None on failure."""
@@ -656,6 +614,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
