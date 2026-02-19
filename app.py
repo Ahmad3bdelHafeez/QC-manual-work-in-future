@@ -40,7 +40,7 @@ MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
 
 MCP_URL       = "https://playwright-mcp-s8mf.onrender.com/sse"
 MISTRAL_KEY   = "jb0XySiEnvm0r7R3HwSAWvp0aIi80K1v" #"dGA15ms96fjMa6vGmXO7veWlAKInqWVm"
-MISTRAL_MODEL = "mistral-large-latest"
+MISTRAL_MODEL = "mistral-large-2411"
 
 MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
 
@@ -655,6 +655,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
