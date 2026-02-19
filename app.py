@@ -142,19 +142,12 @@ def build_video(steps, video_path, fps=24):
 async def clear_browser_session(session):
     """Hard reset: blank page + clear all storage and cookies."""
     try:
-        # Navigate to blank to kill any active page
+        # Navigate to blank page first
         await session.call_tool("browser_navigate", {"url": "about:blank"})
         print("[session] navigated to about:blank")
     except Exception as e:
         print(f"[session] navigate blank failed: {e}")
-
-    try:
-        # Clear cookies
-        await session.call_tool("browser_delete_cookies", {})
-        print("[session] cookies cleared")
-    except Exception as e:
-        print(f"[session] clear cookies failed: {e}")
-
+    
     try:
         # Clear local/session storage via JS
         await session.call_tool("browser_evaluate", {
@@ -163,13 +156,20 @@ async def clear_browser_session(session):
         print("[session] storage cleared")
     except Exception as e:
         print(f"[session] clear storage failed: {e}")
-
+    
     try:
-        # Close any extra tabs, leave only one
-        await session.call_tool("browser_close", {})
-        print("[session] browser closed")
+        # Close all extra tabs except the current one
+        tabs = await session.call_tool("browser_tabs", {"action": "list"})
+        if isinstance(tabs, dict) and "tabs" in tabs and len(tabs["tabs"]) > 1:
+            # Close all but the first tab
+            for i in range(len(tabs["tabs"]) - 1, 0, -1):
+                await session.call_tool("browser_tabs", {"action": "close", "index": i})
+            print(f"[session] closed extra tabs, {len(tabs['tabs'])} -> 1")
     except Exception as e:
-        print(f"[session] browser_close failed: {e}")
+        print(f"[session] manage tabs failed: {e}")
+    
+    print("[session] browser session cleared and ready")
+    return session
 
 async def run_agent(messages):
     client = Mistral(api_key=MISTRAL_KEY)
@@ -658,6 +658,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
