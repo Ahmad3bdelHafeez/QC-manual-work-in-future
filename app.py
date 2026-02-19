@@ -140,33 +140,38 @@ def build_video(steps, video_path, fps=24):
 
 
 async def clear_browser_session(session):
-    """Initialize browser with a completely fresh session."""
+    """Clear all auth state and start fresh login flow."""
     try:
-        # First, try to close any existing browser gracefully
-        try:
-            await session.call_tool("browser_close", {})
-            print("[session] closed existing browser")
-        except:
-            pass
-        
-        # Open a new fresh tab
-        await session.call_tool("browser_tabs", {"action": "new"})
-        print("[session] opened new tab")
-        
-        # Navigate to blank
+        # Navigate to about:blank first
         await session.call_tool("browser_navigate", {"url": "about:blank"})
-        print("[session] navigated to blank")
-        
-        # Clear storage
-        await session.call_tool("browser_evaluate", {
-            "function": "() => { localStorage.clear(); sessionStorage.clear(); }"
-        })
-        print("[session] storage cleared")
-        
-        return session
+        print("[session] navigated to about:blank")
     except Exception as e:
-        print(f"[session] initialization failed: {e}")
-        raise
+        print(f"[session] navigate blank failed: {e}")
+    
+    try:
+        # Clear ALL storage including IndexedDB, ServiceWorkers, etc
+        await session.call_tool("browser_evaluate", {
+            "function": """() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                // Clear all cookies
+                document.cookie.split(";").forEach(c => {
+                    document.cookie = c.split("=")[0].trim() + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                });
+            }"""
+        })
+        await session.call_tool("browser_evaluate", {
+            "function": """() => {
+                if (window.indexedDB) {
+                    const dbs = await indexedDB.databases();
+                    dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+                }
+            }"""
+        })
+        print("[session] all storage and cookies cleared")
+    except Exception as e:
+        print(f"[session] clear storage failed: {e}")
+    
 
 async def run_agent(messages):
     client = Mistral(api_key=MISTRAL_KEY)
@@ -655,6 +660,7 @@ def home():
     return render_template("index.html")
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
