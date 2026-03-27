@@ -654,6 +654,70 @@ def generate_data_quality_tests():
     print(result)
     print({"message": "Data Quality Tests generated", "output": result})
     return jsonify({"message": "Data Quality Tests generated", "output": result})
+
+@app.route('/generate-hls', methods=['POST'])
+def generate_hls():
+    data = request.json
+    user_story = data.get('user_story')
+    print(user_story)
+
+    if not user_story:
+        return jsonify({"error": "user_story is required"}), 400
+
+    prompt = f"{user_story}, from the given user stories/requirements, create a table of high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions, Answers, Issues), give me the table only"
+    result = call_mistral_model(prompt)
+    print(result)
+    print({"message": "Test Cases generated", "output": result})
+    return jsonify({"message": "High Level Scenarios generated", "output": result})
+
+@app.route('/review_test_cases', methods=['POST'])
+def review_test_cases():
+    data = request.json
+    test_cases = data.get('test_cases')
+    print(test_cases)
+
+    if not test_cases:
+        return jsonify({"error": "test_cases is required"}), 400
+
+    prompt = f"""{test_cases}, from the given test cases, review each test case based on the following analysis:
+    1. Test Case ID: Each test case should have a unique identifier.
+    2. Test Case name is self explanatory:	The name of the test case clearly indicates its purpose and easy to understand what  module is the test subject.
+    3. Test Objective:	Clearly states what the test is intended to verify.
+    4. Functionality coverage:	All relevant functionalities are covered.
+    5. Test Data and Pre-Requisites Defined:	Test Data and Pre-Requisites for execution are clearly specified.
+    6. Correct Sequence of Steps:	Steps/Actions should state very clearly the sequence of actions to be carried out on the system by the user and easy to follow 
+    7. Expected Results Defined: 
+        - Expected results are simple and clearly stated
+        - Expected Results should clearly state how the system should respond to the user actions given in each step/action.    
+        - Ensure that too many things are not included to be verified under one expected output. 
+        - Ensure that separate cases are written for multiple verifications of the application’s behavior.
+        - Vague statements like “Appropriate message/value/screen” etc, should not be part of expected result. Every detail should be clearly spelt out."
+    8. Priority Level:	Indicates the importance/urgency of the test.
+    9. Testability:	The test case is practical and feasible to execute.(explicit and implicit)
+    10. Accurate:	The test case provides correct and valid verification steps and It is obvious what the test is trying to test.
+    11. Economical:	Test case avoids unnecessary steps and uses minimal resources.
+    12. Redundancy:	No duplicate test cases or steps are present.
+    13. Replication:	Test case can be re-executed with consistent results.
+    14. Grammatical & Spelling: 	All statements are free from grammatical and spelling mistakes.
+    15. Simple Language:	Test case uses clear and simple langauge.
+    16. Reference File Attached:	Reference files are attached and accurate.
+    17. Correct Directory Placement:	Test case is placed in the correct directory.
+    18. Configuration Information: 	"Specifies the configuration information such as :
+                                    *Environment Details, 
+                                    *Test Data, 
+                                    *Test pre-requisite, 
+                                    *Security Access( if exist)"
+    19. Requirement to Test Condition Mapping: All requirements are mapped to test conditions, both explicit and implicit, been converted into Test conditions.
+    20. Boundary/Special/Invalid: 	"These values are properly identified and tested, Boundary values, Special values and Invalid values been identified and included in the Test cases."
+    21. Negative Scenarios: 	Negative test conditions are included.
+    22. Reviewer Name/Date:	For QA reviewer to confirm test case validity.
+
+    Give me a table only include each factor name of analysis, Complies (Yes/No) and comments if complies No with a reference of test cases.
+    """
+    result = call_mistral_model(prompt)
+    print(result)
+    print({"message": "Test Cases Reviewed", "output": result})
+    return jsonify({"message": "Test Cases Reviewed", "output": result})
 # Serve home page
 @app.route("/", methods=["GET"])
 def home():
