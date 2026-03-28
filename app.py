@@ -666,14 +666,14 @@ def generate_hls():
 
     prompt = f"""{user_story}
             From the given user stories/requirements, 
-            Create a table of comprehensive high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions, Answers, Issues), 
+            Create a table of comprehensive high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions (e.g. if there's any ambiguous), Answers, Issues), 
             Give me the table only"""
     result = call_mistral_model(prompt)
     print(result)
     print({"message": "Test Cases generated", "output": result})
     return jsonify({"message": "High Level Scenarios generated", "output": result})
 
-@app.route('/review_test_cases', methods=['POST'])
+@app.route('/review-test-cases', methods=['POST'])
 def review_test_cases():
     data = request.json
     test_cases = data.get('test_cases')
@@ -715,7 +715,8 @@ def review_test_cases():
     21. Negative Scenarios: 	Negative test conditions are included.
     22. Reviewer Name/Date:	For QA reviewer to confirm test case validity.
 
-    Give me a table only include each factor name of analysis, Complies (Yes/No) and comments if complies No with a reference of test cases.
+    Give me a table only including each factor name of analysis, Complies (Yes/No) and comments if complies No with a reference to test cases (e.g. test case id).
+    Give me the table only
     """
     result = call_mistral_model(prompt)
     print(result)
