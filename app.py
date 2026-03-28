@@ -666,7 +666,25 @@ def generate_hls():
 
     prompt = f"""{user_story}
             From the given user stories/requirements, 
-            Create a table of comprehensive high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions (e.g. comprehensive questions if there are any ambiguous), Answers, Issues), 
+            Create a table of comprehensive high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Scenario ID, Module, Scenario Priority, Scenario Description), 
+            Give me the table only"""
+    result = call_mistral_model(prompt)
+    print(result)
+    print({"message": "Test Cases generated", "output": result})
+    return jsonify({"message": "High Level Scenarios generated", "output": result})
+
+@app.route('/analyse-req', methods=['POST'])
+def analyse_requirements():
+    data = request.json
+    user_story = data.get('user_story')
+    print(user_story)
+
+    if not user_story:
+        return jsonify({"error": "user_story is required"}), 400
+
+    prompt = f"""{user_story}
+            From the given user stories/requirements, 
+            Create a table of comprehensive analysis for the given requirements/user stories (#, Comments/Questions/Gaps (e.g. comprehensive questions if there are any ambiguous), Answers/Assumptions), 
             Give me the table only"""
     result = call_mistral_model(prompt)
     print(result)
