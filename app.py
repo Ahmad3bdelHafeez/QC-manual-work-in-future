@@ -715,7 +715,7 @@ def review_test_cases():
     21. Negative Scenarios: 	Negative test conditions are included.
     22. Reviewer Name/Date:	For QA reviewer to confirm test case validity.
     ,
-    Give me a table with only the analysis factor name, Complies (Yes/No), and comments if Complies is No, with a reference to test cases (e.g., test case id).
+    Create a table with the analysis factor name, Complies (Yes/No), and comments (if Complies is No, with a reference to test cases (e.g., test case id)), then Givve me the table only.
     """
     result = call_mistral_model(prompt)
     print(result)
