@@ -666,7 +666,7 @@ def generate_hls():
 
     prompt = f"""{user_story}
             From the given user stories/requirements, 
-            Create a table of comprehensive high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions (e.g. if there's any ambiguous), Answers, Issues), 
+            Create a table of comprehensive high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions (e.g. comprehensive questions if there are any ambiguous), Answers, Issues), 
             Give me the table only"""
     result = call_mistral_model(prompt)
     print(result)
@@ -714,9 +714,8 @@ def review_test_cases():
     20. Boundary/Special/Invalid: 	"These values are properly identified and tested, Boundary values, Special values and Invalid values been identified and included in the Test cases."
     21. Negative Scenarios: 	Negative test conditions are included.
     22. Reviewer Name/Date:	For QA reviewer to confirm test case validity.
-
-    Give me a table only including each factor name of analysis, Complies (Yes/No) and comments if complies No with a reference to test cases (e.g. test case id).
-    Give me the table only
+    ,
+    Give me a table with only the analysis factor name, Complies (Yes/No), and comments if Complies is No, with a reference to test cases (e.g., test case id).
     """
     result = call_mistral_model(prompt)
     print(result)
