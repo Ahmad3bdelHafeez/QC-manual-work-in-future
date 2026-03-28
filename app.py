@@ -664,7 +664,10 @@ def generate_hls():
     if not user_story:
         return jsonify({"error": "user_story is required"}), 400
 
-    prompt = f"{user_story}, from the given user stories/requirements, create a table of high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions, Answers, Issues), give me the table only"
+    prompt = f"""{user_story}
+            From the given user stories/requirements, 
+            Create a table of comprehensive high-level scenarios that analyse the given requirements/user stories (User Story ID, User Story Name, Module, Path, User Story Priority, Actor, Pre-Conditions, Fields, Test Case Title, Test Case Description, Main Flows in Steps, Expected Results, Post Conditions, Test-Data	Complexity, Comments/Questions, Answers, Issues), 
+            Give me the table only"""
     result = call_mistral_model(prompt)
     print(result)
     print({"message": "Test Cases generated", "output": result})
