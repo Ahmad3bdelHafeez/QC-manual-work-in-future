@@ -397,7 +397,7 @@ def download_file(filename):
 
 def call_mistral_model(prompt):
     client = Mistral(api_key=MISTRAL_KEY)
-    model = "mistral-large-2411"
+    model = "mistral-large-2512"
     chat_response = client.chat.complete(
         model=model,
         messages=[{"role": "user", "content": prompt}]
