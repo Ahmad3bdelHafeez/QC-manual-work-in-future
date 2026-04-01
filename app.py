@@ -259,7 +259,28 @@ async def run_agent(messages):
                     })
 
             return "Max turns reached.", steps
+            
+@app.post("/execute_agtnt")
+def execute_mistral():
+    body     = request.get_json()
+    messages = body.get("messages", "")
 
+    from langchain_anthropic import ChatAnthropic
+    from langchain.agents import create_agent
+    
+    
+    model = ChatAnthropic(
+        model_name="claude-haiku-4-5-20251001", temperature=0
+    )  # or any other LLM, e.g., ChatOpenAI(), OpenAI()
+    
+    agent_chain = create_agent(model=model, tools=tools)
+    result = await agent_chain.ainvoke(
+        {"messages": [("user", messages)]}
+    )
+    print(result)
+    return jsonify({
+        "answer": result
+    })
 
 @app.post("/execute_mistral")
 def execute_mistral():
