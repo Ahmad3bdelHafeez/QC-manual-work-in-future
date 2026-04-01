@@ -37,9 +37,9 @@ CORS(app)  # allow all origins
 ANTHROPIC_API_KEY = "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" #"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"
 LANGSMITH_API_KEY = "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"
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
-os.environ["ANTHROPIC_API_KEY"] = ANTHROPIC_API_KEY
-os.environ["LANGSMITH_API_KEY"] = LANGSMITH_API_KEY
-os.environ["LANGSMITH_TRACING"] = "true"
+# os.environ["ANTHROPIC_API_KEY"] = ANTHROPIC_API_KEY
+# os.environ["LANGSMITH_API_KEY"] = LANGSMITH_API_KEY
+# os.environ["LANGSMITH_TRACING"] = "true"
 MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
 
 MCP_URL       = "https://playwright-mcp-s8mf.onrender.com/sse"
@@ -263,37 +263,37 @@ async def run_agent(messages):
                     })
 
             return "Max turns reached.", steps
-import nest_asyncio
-import asyncio
+# import nest_asyncio
+# import asyncio
 
-from langchain_anthropic import ChatAnthropic
-from langchain.agents import create_agent
-from langchain_community.agent_toolkits import PlayWrightBrowserToolkit
-from langchain_community.tools.playwright.utils import create_async_playwright_browser
+# from langchain_anthropic import ChatAnthropic
+# from langchain.agents import create_agent
+# from langchain_community.agent_toolkits import PlayWrightBrowserToolkit
+# from langchain_community.tools.playwright.utils import create_async_playwright_browser
             
-@app.route("/execute_agent", methods=["POST"])
-def execute_agent():
-    body = request.get_json()
-    messages = body.get("messages", "")
+# @app.route("/execute_agent", methods=["POST"])
+# def execute_agent():
+#     body = request.get_json()
+#     messages = body.get("messages", "")
 
-    nest_asyncio.apply()
+#     nest_asyncio.apply()
 
-    async def run_agent1():
-        async_browser = await create_async_playwright_browser()
-        toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
-        tools = toolkit.get_tools()
+#     async def run_agent1():
+#         async_browser = await create_async_playwright_browser()
+#         toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
+#         tools = toolkit.get_tools()
 
-        model = ChatAnthropic(
-            model_name="claude-haiku-4-5-20251001",
-            temperature=0
-        )
+#         model = ChatAnthropic(
+#             model_name="claude-haiku-4-5-20251001",
+#             temperature=0
+#         )
 
-        agent_chain = create_agent(model=model, tools=tools)
-        return await agent_chain.ainvoke({"messages": [("user", messages)]})
+#         agent_chain = create_agent(model=model, tools=tools)
+#         return await agent_chain.ainvoke({"messages": [("user", messages)]})
 
-    result = asyncio.run(run_agent1())
-    print(result)
-    return jsonify({"answer": result})
+#     result = asyncio.run(run_agent1())
+#     print(result)
+#     return jsonify({"answer": result})
 
 
 @app.post("/execute_mistral")
