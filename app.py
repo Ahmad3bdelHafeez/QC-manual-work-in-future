@@ -259,39 +259,38 @@ async def run_agent(messages):
                     })
 
             return "Max turns reached.", steps
+import nest_asyncio
+import asyncio
+
+from langchain_anthropic import ChatAnthropic
+from langchain.agents import create_agent
+from langchain_community.agent_toolkits import PlayWrightBrowserToolkit
+from langchain_community.tools.playwright.utils import create_async_playwright_browser
             
-@app.post("/execute_agent")
-async def execute_agent():
-    body     = request.get_json()
+@app.route("/execute_agent", methods=["POST"])
+def execute_agent():
+    body = request.get_json()
     messages = body.get("messages", "")
 
-    from langchain_anthropic import ChatAnthropic
-    from langchain.agents import create_agent
-    from langchain_community.agent_toolkits import PlayWrightBrowserToolkit
-    from langchain_community.tools.playwright.utils import (
-        create_async_playwright_browser,  # A synchronous browser is available, though it isn't compatible with jupyter.\n",   },
-    )
-    import nest_asyncio
-
     nest_asyncio.apply()
-    async_browser = create_async_playwright_browser()
-    toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
-    tools = toolkit.get_tools()
-    
 
-    
-    model = ChatAnthropic(
-        model_name="claude-haiku-4-5-20251001", temperature=0
-    )  # or any other LLM, e.g., ChatOpenAI(), OpenAI()
-    
-    agent_chain = create_agent(model=model, tools=tools)
-    result = await agent_chain.ainvoke(
-        {"messages": [("user", messages)]}
-    )
+    async def run_agent1():
+        async_browser = await create_async_playwright_browser()
+        toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
+        tools = toolkit.get_tools()
+
+        model = ChatAnthropic(
+            model_name="claude-haiku-4-5-20251001",
+            temperature=0
+        )
+
+        agent_chain = create_agent(model=model, tools=tools)
+        return await agent_chain.ainvoke({"messages": [("user", messages)]})
+
+    result = asyncio.run(run_agent1())
     print(result)
-    return jsonify({
-        "answer": result
-    })
+    return jsonify({"answer": result})
+
 
 @app.post("/execute_mistral")
 def execute_mistral():
