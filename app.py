@@ -274,7 +274,7 @@ def execute_mistral():
     )  # or any other LLM, e.g., ChatOpenAI(), OpenAI()
     
     agent_chain = create_agent(model=model, tools=tools)
-    result = await agent_chain.ainvoke(
+    result = agent_chain.ainvoke(
         {"messages": [("user", messages)]}
     )
     print(result)
