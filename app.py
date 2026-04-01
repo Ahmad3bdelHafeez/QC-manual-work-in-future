@@ -261,7 +261,7 @@ async def run_agent(messages):
             return "Max turns reached.", steps
             
 @app.post("/execute_agent")
-def execute_agent():
+async def execute_agent():
     body     = request.get_json()
     messages = body.get("messages", "")
 
@@ -285,7 +285,7 @@ def execute_agent():
     )  # or any other LLM, e.g., ChatOpenAI(), OpenAI()
     
     agent_chain = create_agent(model=model, tools=tools)
-    result = agent_chain.ainvoke(
+    result = await agent_chain.ainvoke(
         {"messages": [("user", messages)]}
     )
     print(result)
