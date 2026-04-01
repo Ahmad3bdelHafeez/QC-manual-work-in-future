@@ -267,7 +267,18 @@ def execute_agent():
 
     from langchain_anthropic import ChatAnthropic
     from langchain.agents import create_agent
+    from langchain_community.agent_toolkits import PlayWrightBrowserToolkit
+    from langchain_community.tools.playwright.utils import (
+        create_async_playwright_browser,  # A synchronous browser is available, though it isn't compatible with jupyter.\n",   },
+    )
+    import nest_asyncio
+
+    nest_asyncio.apply()
+    async_browser = create_async_playwright_browser()
+    toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
+    tools = toolkit.get_tools()
     
+
     
     model = ChatAnthropic(
         model_name="claude-haiku-4-5-20251001", temperature=0
