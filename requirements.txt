@@ -12,3 +12,5 @@ opencv-python-headless
 pillow
 imageio
 imageio-ffmpeg
+langchain
+langchain-anthropic
