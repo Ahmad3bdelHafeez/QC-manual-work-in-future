@@ -17,3 +17,4 @@ langchain-anthropic
 langchain-community
 playwright
 nest_asyncio
+lxml
