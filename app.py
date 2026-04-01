@@ -260,8 +260,8 @@ async def run_agent(messages):
 
             return "Max turns reached.", steps
             
-@app.post("/execute_agtnt")
-def execute_mistral():
+@app.post("/execute_agent")
+def execute_agent():
     body     = request.get_json()
     messages = body.get("messages", "")
 
