@@ -14,3 +14,6 @@ imageio
 imageio-ffmpeg
 langchain
 langchain-anthropic
+langchain-community
+playwright
+nest_asyncio
