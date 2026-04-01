@@ -35,7 +35,11 @@ import numpy as np
 app = Flask(__name__)
 CORS(app)  # allow all origins
 ANTHROPIC_API_KEY = "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" #"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"
+LANGSMITH_API_KEY = "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"
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
+os.environ["ANTHROPIC_API_KEY"] = ANTHROPIC_API_KEY
+os.environ["LANGSMITH_API_KEY"] = LANGSMITH_API_KEY
+os.environ["LANGSMITH_TRACING"] = "true"
 MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
 
 MCP_URL       = "https://playwright-mcp-s8mf.onrender.com/sse"
