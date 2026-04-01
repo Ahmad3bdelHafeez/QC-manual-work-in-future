@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: app
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install chromium
+    startCommand: waitress-serve app:app
+    plan: free
