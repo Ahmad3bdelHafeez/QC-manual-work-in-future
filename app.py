@@ -44,7 +44,7 @@ MCP_SERVER_URL = "https://playwright-mcp-s8mf.onrender.com/sse"
 
 MCP_URL       = "https://playwright-mcp-s8mf.onrender.com/sse"
 MISTRAL_KEY   = "jb0XySiEnvm0r7R3HwSAWvp0aIi80K1v" #"dGA15ms96fjMa6vGmXO7veWlAKInqWVm"
-MISTRAL_MODEL = "mistral-large-2411"
+MISTRAL_MODEL = "codestral-latest"
 
 MAX_TOOL_RESULT_CHARS = 3000   # truncate huge snapshots to save tokens
 
