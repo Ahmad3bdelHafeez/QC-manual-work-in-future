@@ -1,102 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Qninja</title>
+  <title>ConanAI - Next Gen Testing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
+    * {
       margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
       height: 100vh;
+      display: flex;
+      background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #1e3a8a);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #ffffff;
+      font-size: 16px;
+      line-height: 1.6;
+      overflow: hidden;
     }
+
+    @keyframes gradientBG {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .blob_1,
+    .blob_2 {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      opacity: 0.6;
+      animation: float 10s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .blob_1 {
+      width: 400px;
+      height: 400px;
+      background: #8b5cf6;
+      top: -100px;
+      left: -100px;
+    }
+
+    .blob_2 {
+      width: 300px;
+      height: 300px;
+      background: #3b82f6;
+      bottom: -100px;
+      right: -100px;
+      animation-delay: -5s;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+
+      50% {
+        transform: translateY(-20px) scale(1.05);
+      }
+    }
+
     .sidebar {
-      width: 220px;
-      background: #f3f4f6;
-      border-right: 1px solid #ddd;
-      padding-top: 20px;
+      width: 280px;
+      background: rgba(15, 23, 42, 0.4) !important;
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      color: #cbd5e1;
     }
+
+    .sidebar-header {
+      padding: 30px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+      margin-bottom: 10px;
+    }
+
     .sidebar h2 {
-      text-align: center;
-      margin-bottom: 20px;
+      margin: 0;
+      font-size: 22px;
+      color: #fff !important;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
+
     .sidebar ul {
       list-style: none;
-      padding: 0;
-    }
-    .sidebar li {
-      padding: 12px 20px;
-      cursor: pointer;
-    }
-    .sidebar li:hover,
-    .sidebar li.active {
-      background: #dbeafe;
-      font-weight: bold;
-    }
-    .content {
+      padding: 0 12px;
+      margin: 0;
       flex: 1;
-      padding: 20px;
-      background: #f9fafb;
       overflow-y: auto;
     }
-    .card {
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    textarea {
-      width: 98%;
-      height: 120px;
-      padding: 10px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      padding: 8px 16px;
-      margin-right: 8px;
-      border: none;
-      border-radius: 6px;
+
+    .sidebar li {
+      padding: 14px 16px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s ease;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      color: #94a3b8;
+      border-left: none;
     }
-    .btn-blue { background: #3b82f6; color: white; }
-    #result { margin-top: 20px; }
+
+    .sidebar li:hover {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #fff !important;
+      transform: translateX(4px);
+    }
+
+    .sidebar li.active {
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+      color: #ffffff !important;
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.25);
+    }
+
+    .content {
+      flex: 1;
+      padding: 32px 40px;
+      background: transparent !important;
+      overflow-y: auto;
+      max-width: 100%;
+      margin: 0 auto;
+      z-index: 1;
+      position: relative;
+    }
+
+    .welcome-banner {
+      background: rgba(255, 255, 255, 0.05) !important;
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      color: white;
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .modern-card {
+      background: rgba(0, 0, 0, 0.25) !important;
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 16px !important;
+      padding: 24px;
+      box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.6) !important;
+      margin-bottom: 24px;
+      color: #ffffff;
+    }
+
+    .modern-card>div[style*="background: #f8fafc"] {
+      background: transparent !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .modern-card h3 {
+      color: #f1f5f9 !important;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff !important;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+      padding-bottom: 12px;
+    }
+
+    h1[style*="color: #1e293b"],
+    h1 {
+      color: #fff !important;
+      text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+    }
+
+    .form-label {
+      color: #cbd5e1 !important;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-control,
+    textarea,
+    input[type="text"],
+    input[type="url"],
+    input[type="email"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 12px !important;
+      font-size: 15px !important;
+      color: #fff !important;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    /* Fix dropdown options being invisible against white OS background */
+    option {
+      background-color: #0f172a !important;
+      color: #ffffff !important;
+    }
+
+    .form-control:focus,
+    textarea:focus,
+    input:focus,
+    select:focus {
+      outline: none !important;
+      border-color: #60a5fa !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15) !important;
+    }
+
+    .form-control::placeholder,
+    textarea::placeholder {
+      color: #94a3b8 !important;
+      opacity: 1;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease !important;
+      border-radius: 12px !important;
+      font-family: inherit;
+      font-weight: 600 !important;
+      padding: 10px 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+      color: white !important;
+    }
+
+    .btn-green {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: white !important;
+    }
+
+    .btn-orange {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      color: white !important;
+    }
+
+    .btn-red {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+      color: white !important;
+    }
+
+    .btn-blue:hover,
+    .btn-green:hover,
+    .btn-orange:hover,
+    .btn-red:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3) !important;
+      filter: brightness(1.1);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    th,
+    td {
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      padding: 14px 18px !important;
+      text-align: left;
+      color: #ffffff;
+      font-size: 15px;
+    }
+
+    th:last-child {
+      width: 220px;
+      text-align: center;
+    }
+
+    td:last-child {
+      text-align: center;
+    }
+
+    th {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .editable-cell input,
+    .editable-cell textarea {
+      background: transparent !important;
+      color: #fff !important;
+      border: none !important;
+    }
+
+    .editable-cell textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .helper-text {
+      color: #cbd5e1 !important;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .project-info,
+    .jira-config {
+      background: rgba(59, 130, 246, 0.1) !important;
+      border: 1px solid rgba(59, 130, 246, 0.2) !important;
+      color: #93c5fd !important;
+    }
+
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .action-buttons button {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .action-buttons button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.4);
+    }
+
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .input-col {
+      flex: 1;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      gap: 8px;
+    }
+
+    .logout-btn {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: #fca5a5 !important;
+      border: 1px solid rgba(239, 68, 68, 0.2) !important;
+      width: 100%;
+      padding: 12px !important;
+      margin-top: auto;
+      box-shadow: none !important;
+    }
+
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.2) !important;
+      color: #fff !important;
+      transform: translateY(-2px) !important;
+    }
   </style>
 </head>
+
 <body>
+  <div class="blob_1"></div>
+  <div class="blob_2"></div>
 
   <!-- Sidebar -->
   <div class="sidebar">
-    <h2>Qninja</h2>
+    <div class="sidebar-header">
+      <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">🚀</span> SmartQA
+      </h2>
+      <div style="font-size: 12px; color: #64748b; margin-top: 4px; margin-left: 38px; font-weight: 500;">AI-Powered
+        Testing Suite</div>
+    </div>
+
     <ul>
-      <li class="active" onclick="showPage('test-plan')">Test Plan Generator</li>
-      <li onclick="showPage('test-case')">Test Case Generator</li>
-      <li onclick="showPage('bug-reporter')">Bug Reporter</li>
-      <li onclick="showPage('data-generator')">Data Generator</li>
-      <li onclick="showPage('data-quality')">Data Quality Tests Generator</li>
+      <li class="active" onclick="showPage('test-plan')">
+        <span class="sidebar-icon">📑</span> Test Plan
+      </li>
+      <li onclick="showPage('test-case')">
+        <span class="sidebar-icon">🧪</span> Test Cases
+      </li>
+      <li onclick="showPage('req-analysis')">
+        <span class="sidebar-icon">📊</span> Req Analysis
+      </li>
+      <li onclick="showPage('bug-reporter')">
+        <span class="sidebar-icon">🐞</span> Bug Reporter
+      </li>
+      <li onclick="showPage('data-generator')">
+        <span class="sidebar-icon">🎲</span> Data Gen
+      </li>
+      <li onclick="showPage('data-quality')">
+        <span class="sidebar-icon">🔍</span> Quality Check
+      </li>
+      <li onclick="showPage('execution')">
+        <span class="sidebar-icon">▶️</span> Execution
+      </li>
     </ul>
   </div>
 
   <!-- Content -->
   <div class="content" id="content">
 
+    <div id="welcome-section" class="welcome-banner" style="display: none;">
+      <div class="welcome-text">
+        <h2 id="welcome-title">Welcome back!</h2>
+        <p id="welcome-subtitle"></p>
+      </div>
+      <div style="z-index: 1;">
+        <button class="logout-btn" onclick="logout()">
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+
     <!-- ===================== -->
     <!-- Test Plan Generator -->
     <!-- ===================== -->
     <div id="test-plan" class="page">
-      <h1>Test Plan Generator</h1>
-      <div class="card">
-        <h3>Requirements Input</h3>
-        <textarea id="requirements" placeholder="Paste your requirements, user stories, or feature specifications here..."></textarea>
-        <div>
-          <button class="btn-blue" onclick="generateTestPlan()">Generate Test Plan</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h1 style="margin:0; font-size: 28px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 32px;">📑</span> Test Plan Generator
+        </h1>
+      </div>
+
+      <div class="modern-card">
+        <h3 class="section-title">✨ Requirements Input</h3>
+        <div class="input-group">
+          <label class="form-label" for="requirements">Requirements / User Stories</label>
+          <textarea id="requirements" class="form-control" style="height: 120px; font-family: inherit;"
+            placeholder="Paste your requirements, user stories, or feature specifications here..."></textarea>
+          <div class="helper-text">Provide detailed requirements for a comprehensive test plan.</div>
+        </div>
+        <div style="text-align: right;">
+          <button class="btn-blue" onclick="generateTestPlan()">
+            ⚡ Generate Test Plan
+          </button>
         </div>
       </div>
-      <div class="card" id="result" style="text-align:center; color:gray;">
-        <p>Your generated test plan will appear here</p>
+
+      <div class="modern-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+          <h3 style="margin: 0; color: #334155; font-size: 18px;">📝 Generated Results</h3>
+        </div>
+        <div id="result" style="padding: 20px; text-align: center;">
+          <div style="text-align: center; color: #9ca3af; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">📑</div>
+            <p>Your generated test plan will appear here</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -104,41 +539,345 @@
     <!-- Test Case Generator -->
     <!-- ===================== -->
     <div id="test-case" class="page" style="display:none;">
-      <h1>Test Case Generator</h1>
-      <div class="card">
-        <h3>User Story / Requirement</h3>
-        <textarea id="testcase-input" placeholder="Paste your user story or requirement here..."></textarea>
-        <div>
-          <button class="btn-blue" onclick="generateTestCases()">Generate Test Cases</button>
+      <div id="test-case-tabs"
+        style="display:flex; gap: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 24px; padding-bottom: 0px;">
+        <div id="tab-generator" onclick="switchTestCaseTab('generation')"
+          style="padding: 10px 4px; cursor: pointer; color: #fff; border-bottom: 2px solid #3b82f6; font-weight: 600; font-size: 16px; transition: color 0.2s;">
+          ⚙️ Generator</div>
+        <div id="tab-review" onclick="switchTestCaseTab('review')"
+          style="padding: 10px 4px; cursor: pointer; color: #94a3b8; border-bottom: 2px solid transparent; font-weight: 600; font-size: 16px; transition: color 0.2s;">
+          🔍 Review Results</div>
+      </div>
+
+      <div id="test-case-generation-tab">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+          <h1 style="margin:0; font-size: 28px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 32px;">🧪</span> Test Case Generator
+          </h1>
+        </div>
+
+        <!-- Main Generation Card -->
+        <div class="modern-card">
+          <h3 class="section-title">✨ Generate from Requirements</h3>
+
+          <div class="input-group">
+            <label class="form-label" for="testcase-input">User Story / Requirement</label>
+            <textarea id="testcase-input" class="form-control" style="height: 120px; font-family: inherit;"
+              placeholder="As a user, I want to be able to reset my password so that I can regain access to my account..."></textarea>
+            <div class="helper-text">Provide detailed requirements for better AI generation results.</div>
+          </div>
+
+          <div style="text-align: right;">
+            <button class="btn-blue" onclick="generateTestCases()">
+              ⚡ Generate Test Cases
+            </button>
+          </div>
+        </div>
+
+        <!-- Jira Integration Card -->
+        <div class="modern-card">
+          <h3 class="section-title">🔗 Jira Integration</h3>
+
+          <div class="input-row">
+            <div class="input-col">
+              <label class="form-label" for="jira-project-select">Select Jira Project</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="jira-project-select" class="form-control">
+                  <option value="">Select a project...</option>
+                </select>
+                <button type="button" class="btn-blue"
+                  onclick="loadJiraProjectsForSelect('jira-project-select', (project) => { document.getElementById('selected-project-name').textContent = project.name + ' (' + project.key + ')'; document.getElementById('jira-project-info').style.display = 'block'; })"
+                  title="Refresh Projects" style="padding: 10px 14px;">🔄</button>
+              </div>
+            </div>
+
+            <div class="input-col">
+              <label class="form-label" for="jira-issue-key">Link to User Story (Optional)</label>
+              <input type="text" id="jira-issue-key" class="form-control" placeholder="e.g. STORY-123">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="form-label" for="jira-testset-key">Add to Test Set (Optional)</label>
+            <input type="text" id="jira-testset-key" class="form-control" placeholder="e.g. TSET-456">
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="auto-create-testset" style="width: 16px; height: 16px; cursor: pointer;">
+              <label for="auto-create-testset" style="font-size: 13px; color: #cbd5e1; cursor: pointer;">Auto-create
+                Test Set from User Story name</label>
+            </div>
+            <div class="helper-text">If provided, created tests will be added to this Xray Test Set.</div>
+          </div>
+
+          <div class="input-group">
+            <label class="form-label">Search User Story from Jira</label>
+            <div class="search-box">
+              <input type="text" id="jira-issue-search" class="form-control" placeholder="Search by summary or key..."
+                onkeydown="if(event.key === 'Enter') searchUserStories()">
+              <button type="button" class="btn-blue" onclick="searchUserStories()">Search</button>
+            </div>
+            <div id="jira-selected-issue"
+              style="margin-top: 12px; color: #0f766e; font-size: 14px; font-weight: 500; display:none; background: #ccfbf1; padding: 10px; border-radius: 6px; border: 1px solid #99f6e4;">
+            </div>
+            <div id="jira-issue-results" style="margin-top: 8px;"></div>
+          </div>
+
+          <div id="jira-project-info" class="project-info"
+            style="display:none; padding: 12px; background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe; color: #1e40af; margin-top: 15px;">
+            <strong>Selected Project:</strong> <span id="selected-project-name"></span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div id="testcase-actions" style="display:none; margin-bottom: 20px;">
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+
+            <button class="btn-blue" onclick="copyTable()">📋 Copy Table</button>
+            <button class="btn-blue" onclick="downloadExcel()">⬇️ Download Excel</button>
+            <button class="btn-green" id="review-tests-btn" onclick="reviewTestCases()">🔍 Review Test Cases</button>
+            <button class="btn-orange" id="jira-upload-btn" onclick="uploadToXray()">🚀 Upload to Jira</button>
+
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="modern-card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: transparent;">
+            <h3 style="margin: 0; color: #fff; font-size: 18px;">📝 Generated Results</h3>
+          </div>
+          <div id="testcase-result" style="overflow-x:auto; padding: 20px;">
+            <div style="text-align: center; color: #9ca3af; padding: 40px;">
+              <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🧪</div>
+              <p>Generated test cases will appear here</p>
+            </div>
+          </div>
+        </div>
+      </div> <!-- Close test-case-generation-tab -->
+
+      <div id="test-case-review-tab" style="display:none;">
+        <div class="modern-card" id="review-tests-card" style="padding: 0; overflow: hidden; margin-top: 0px;">
+          <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: transparent;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <h3 style="margin: 0; color: #fff; font-size: 18px;">✅ Test Case Review Report</h3>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-blue" onclick="copyReviewTable()">📋 Copy Table</button>
+                <button class="btn-green" onclick="downloadReviewCSV()">⬇️ Download CSV</button>
+              </div>
+            </div>
+          </div>
+          <div id="review-tests-result" style="overflow-x:auto; padding: 20px;">
+          </div>
+        </div>
+      </div> <!-- Close test-case-review-tab -->
+    </div> <!-- Close test-case page -->
+
+    <!-- ===================== -->
+    <!-- Requirement Analysis -->
+    <!-- ===================== -->
+    <div id="req-analysis" class="page" style="display:none;">
+
+      <div id="req-tabs"
+        style="display:flex; gap: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 24px; padding-bottom: 0px;">
+        <div id="tab-req-analysis" onclick="switchReqTab('analysis')"
+          style="padding: 10px 4px; cursor: pointer; color: #fff; border-bottom: 2px solid #3b82f6; font-weight: 600; font-size: 16px; transition: color 0.2s;">
+          🔍 Analysis Results</div>
+        <div id="tab-req-scenario" onclick="switchReqTab('scenario')"
+          style="padding: 10px 4px; cursor: pointer; color: #94a3b8; border-bottom: 2px solid transparent; font-weight: 600; font-size: 16px; transition: color 0.2s;">
+          🧩 High Level Scenarios</div>
+      </div>
+
+
+      <div id="req-input-section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+          <h1 style="margin:0; font-size: 28px; color: #fff; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 32px;">📊</span> Requirement Analysis
+          </h1>
+        </div>
+
+        <div class="modern-card">
+          <h3 class="section-title">✨ Input Requirements</h3>
+          <div class="input-group">
+            <label class="form-label" for="req-analysis-input">User Story / Requirements</label>
+            <textarea id="req-analysis-input" class="form-control" style="height: 120px;"
+              placeholder="Paste user stories here..."></textarea>
+            <div class="helper-text">Enter stories to analyze them or generate high-level scenarios.</div>
+          </div>
+          <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn-blue" onclick="analyseRequirements()">
+              🔍 Analyze Requirements
+            </button>
+            <button class="btn-green" onclick="generateHighLevelScenarios()">
+              🧩 Generate Scenarios
+            </button>
+          </div>
+        </div>
+
+        <!-- Jira Integration Card -->
+        <div class="modern-card">
+          <h3 class="section-title">🔗 Jira Integration</h3>
+
+          <div class="input-row">
+            <div class="input-col">
+              <label class="form-label" for="req-jira-project-select">Select Jira Project</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="req-jira-project-select" class="form-control">
+                  <option value="">Select a project...</option>
+                </select>
+                <button type="button" class="btn-blue"
+                  onclick="loadJiraProjectsForSelect('req-jira-project-select', (project) => { document.getElementById('req-selected-project-name').textContent = project.name + ' (' + project.key + ')'; document.getElementById('req-jira-project-info').style.display = 'block'; })"
+                  title="Refresh Projects" style="padding: 10px 14px;">🔄</button>
+              </div>
+            </div>
+
+            <div class="input-col">
+              <label class="form-label" for="req-jira-issue-key">Link to User Story (Optional)</label>
+              <input type="text" id="req-jira-issue-key" class="form-control" placeholder="e.g. STORY-123">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="form-label">Search User Story from Jira</label>
+            <div class="search-box">
+              <input type="text" id="req-jira-issue-search" class="form-control"
+                placeholder="Search by summary or key..." onkeydown="if(event.key === 'Enter') searchReqUserStories()">
+              <button type="button" class="btn-blue" onclick="searchReqUserStories()">Search</button>
+            </div>
+            <div id="req-jira-selected-issue"
+              style="margin-top: 12px; color: #0f766e; font-size: 14px; font-weight: 500; display:none; background: #ccfbf1; padding: 10px; border-radius: 6px; border: 1px solid #99f6e4;">
+            </div>
+            <div id="req-jira-issue-results" style="margin-top: 8px;"></div>
+          </div>
+
+          <div id="req-jira-project-info" class="project-info"
+            style="display:none; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; margin-top: 15px;">
+            <strong>Selected Project:</strong> <span id="req-selected-project-name"></span>
+          </div>
+        </div>
+      </div> <!-- close req-input-section -->
+
+      <div id="req-analysis-content-tab">
+        <!-- Analysis Results -->
+        <div class="modern-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+          <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: transparent;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <h3 style="margin: 0; color: #fff; font-size: 18px;">📝 Analysis Results</h3>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-blue" onclick="copyReqAnalysisTable()">📋 Copy Table</button>
+                <button class="btn-green" onclick="downloadReqAnalysisCSV()">⬇️ Download CSV</button>
+              </div>
+            </div>
+          </div>
+          <div id="req-analysis-result" style="overflow-x:auto; padding: 20px;">
+            <div style="text-align: center; color: #9ca3af; padding: 40px;">
+              <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🔍</div>
+              <p>Requirement analysis will appear here</p>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="testcase-actions" style="display:none; margin-top:10px; text-align:right;">
-        <button class="btn-blue" onclick="copyTable()">📋 Copy Table</button>
-        <button class="btn-blue" onclick="downloadExcel()">⬇️ Download Excel</button>
+
+      <div id="req-scenario-content-tab" style="display:none;">
+        <!-- Scenarios Results -->
+        <div class="modern-card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: transparent;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <h3 style="margin: 0; color: #fff; font-size: 18px;">📝 High Level Scenarios</h3>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-blue" onclick="copyReqScenarioTable()">📋 Copy Table</button>
+                <button class="btn-green" onclick="downloadReqScenarioCSV()">⬇️ Download CSV</button>
+              </div>
+            </div>
+          </div>
+          <div id="req-scenario-result" style="overflow-x:auto; padding: 20px;">
+            <div style="text-align: center; color: #9ca3af; padding: 40px;">
+              <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🧩</div>
+              <p>Generated scenarios will appear here</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card" id="testcase-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
-        <p>Your generated test cases will appear here</p>
-      </div>
-    </div>
+
+    </div> <!-- Close req-analysis page -->
 
     <!-- ===================== -->
     <!-- Bug Reporter -->
     <!-- ===================== -->
     <div id="bug-reporter" class="page" style="display:none;">
-      <h1>Bug Reporter</h1>
-      <div class="card">
-        <h3>Bug(s) Description / Scenario</h3>
-        <textarea id="bugreport-input" placeholder="Describe the bug(s) or scenario(s) here..."></textarea>
-        <div>
-          <button class="btn-blue" onclick="generateBugReport()">Generate Bug Report</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h1 style="margin:0; font-size: 28px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 32px;">🐞</span> Bug Reporter
+        </h1>
+      </div>
+
+      <!-- Bug Generation Section -->
+      <div class="modern-card">
+        <h3 class="section-title">✨ Bug Description</h3>
+        <div class="input-group">
+          <label class="form-label" for="bugreport-input">Bug(s) Description / Scenario</label>
+          <textarea id="bugreport-input" class="form-control" style="height: 120px; font-family: inherit;"
+            placeholder="Describe the bug(s) or scenario(s) here..."></textarea>
+          <div class="helper-text">Provide detailed steps to reproduce for better bug reports.</div>
+        </div>
+        <div style="text-align: right;">
+          <button class="btn-blue" onclick="generateBugReport()">
+            ⚡ Generate Bug Report
+          </button>
         </div>
       </div>
-      <div id="bugreport-actions" style="display:none; margin-top:10px; text-align:right;">
-        <button class="btn-blue" onclick="copyBugReport()">📋 Copy Table</button>
-        <button class="btn-blue" onclick="downloadBugReport()">⬇️ Download Excel</button>
+
+      <!-- Jira Project Selection -->
+      <div class="modern-card">
+        <h3 class="section-title">🔗 Jira Integration</h3>
+
+        <div class="input-group">
+          <label class="form-label" for="bug-jira-project-select">Select Jira Project</label>
+          <div style="display: flex; gap: 8px;">
+            <select id="bug-jira-project-select" class="form-control">
+              <option value="">Select a project</option>
+            </select>
+            <button type="button" class="btn-blue" onclick="loadBugJiraProjects()" style="padding: 10px 14px;"
+              title="Refresh Projects">🔄</button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="form-label" for="bug-jira-issue-key">User Story (search by summary or key)</label>
+          <div class="search-box">
+            <input type="text" id="bug-jira-issue-key" class="form-control" placeholder="Search by summary or key..."
+              onkeydown="if(event.key === 'Enter') searchBugUserStories()">
+            <button type="button" class="btn-blue" onclick="searchBugUserStories()">Search</button>
+          </div>
+          <div id="bug-jira-selected-issue"
+            style="margin-top: 12px; color: #0f766e; font-size: 14px; font-weight: 500; display:none; background: #ccfbf1; padding: 10px; border-radius: 6px; border: 1px solid #99f6e4;">
+          </div>
+          <div id="bug-jira-issue-results" style="margin-top: 8px;"></div>
+        </div>
+
+        <div id="bug-jira-project-info" class="project-info"
+          style="display:none; padding: 12px; background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe; color: #1e40af; margin-top: 15px;">
+          <strong>Selected Project:</strong> <span id="bug-selected-project-name"></span>
+        </div>
       </div>
-      <div class="card" id="bugreport-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
-        <p>Your generated bug report will appear here</p>
+
+      <!-- Action Buttons -->
+      <div id="bugreport-actions" style="display:none; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn-blue" onclick="copyBugReport()">📋 Copy Table</button>
+          <button class="btn-blue" onclick="downloadBugReport()">⬇️ Download Excel</button>
+          <button class="btn-green" id="bug-jira-upload-btn" onclick="uploadBugsToJira()">🚀 Upload to Jira</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="modern-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+          <h3 style="margin: 0; color: #334155; font-size: 18px;">📝 Generated Results</h3>
+        </div>
+        <div id="bugreport-result" style="overflow-x:auto; padding: 20px;">
+          <div style="text-align: center; color: #9ca3af; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🐞</div>
+            <p>Your generated bug report will appear here</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -146,20 +885,44 @@
     <!-- Data Generator -->
     <!-- ===================== -->
     <div id="data-generator" class="page" style="display:none;">
-      <h1>Data Generator</h1>
-      <div class="card">
-        <h3>Data Requirements</h3>
-        <textarea id="datagenerator-input" placeholder="Describe the data you want to generate (e.g., 50 fake users with name, email, phone)..."></textarea>
-        <div>
-          <button class="btn-blue" onclick="generateData()">Generate Data</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h1 style="margin:0; font-size: 28px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 32px;">🎲</span> Data Generator
+        </h1>
+      </div>
+
+      <div class="modern-card">
+        <h3 class="section-title">✨ Data Requirements</h3>
+        <div class="input-group">
+          <label class="form-label" for="datagenerator-input">Data Description</label>
+          <textarea id="datagenerator-input" class="form-control" style="height: 120px; font-family: inherit;"
+            placeholder="Describe the data you want to generate (e.g., 50 fake users with name, email, phone)..."></textarea>
+          <div class="helper-text">Specify the fields, format, and quantity of data needed.</div>
+        </div>
+        <div style="text-align: right;">
+          <button class="btn-blue" onclick="generateData()">
+            ⚡ Generate Data
+          </button>
         </div>
       </div>
-      <div id="datagenerator-actions" style="display:none; margin-top:10px; text-align:right;">
-        <button class="btn-blue" onclick="copyData()">📋 Copy Table</button>
-        <button class="btn-blue" onclick="downloadData()">⬇️ Download Excel</button>
+
+      <div id="datagenerator-actions" style="display:none; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn-blue" onclick="copyData()">📋 Copy Table</button>
+          <button class="btn-blue" onclick="downloadData()">⬇️ Download Excel</button>
+        </div>
       </div>
-      <div class="card" id="datagenerator-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
-        <p>Your generated data will appear here</p>
+
+      <div class="modern-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+          <h3 style="margin: 0; color: #334155; font-size: 18px;">📝 Generated Results</h3>
+        </div>
+        <div id="datagenerator-result" style="overflow-x:auto; padding: 20px;">
+          <div style="text-align: center; color: #9ca3af; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🎲</div>
+            <p>Your generated data will appear here</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -167,29 +930,190 @@
     <!-- Data Quality Tests Generator -->
     <!-- ============================= -->
     <div id="data-quality" class="page" style="display:none;">
-      <h1>Data Quality Tests Generator</h1>
-      <div class="card">
-        <h3>Table Schema</h3>
-        <textarea id="dataquality-input" placeholder="Paste your table schema here (e.g., column names and data types)..."></textarea>
-        <div>
-          <button class="btn-blue" onclick="generateDataQualityTests()">Generate Tests</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h1 style="margin:0; font-size: 28px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 32px;">🔍</span> Data Quality Tests Generator
+        </h1>
+      </div>
+
+      <div class="modern-card">
+        <h3 class="section-title">✨ Table Schema</h3>
+        <div class="input-group">
+          <label class="form-label" for="dataquality-input">Schema Definition</label>
+          <textarea id="dataquality-input" class="form-control" style="height: 120px; font-family: inherit;"
+            placeholder="Paste your table schema here (e.g., column names and data types)..."></textarea>
+          <div class="helper-text">Provide column names and data types to generate appropriate quality tests.</div>
+        </div>
+        <div style="text-align: right;">
+          <button class="btn-blue" onclick="generateDataQualityTests()">
+            ⚡ Generate Tests
+          </button>
         </div>
       </div>
-      <div class="card" id="dataquality-result" style="margin-top:20px; overflow-x:auto; text-align:center; color:gray;">
-        <p>Your generated data quality tests will appear here</p>
+
+      <div class="modern-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+          <h3 style="margin: 0; color: #334155; font-size: 18px;">📝 Generated Results</h3>
+        </div>
+        <div id="dataquality-result" style="overflow-x:auto; padding: 20px;">
+          <div style="text-align: center; color: #9ca3af; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🔍</div>
+            <p>Your generated data quality tests will appear here</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- Execution Page        -->
+    <!-- ===================== -->
+    <div id="execution" class="page" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div>
+          <h1 style="margin:0; font-size: 28px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 32px;">▶️</span> Execution
+          </h1>
+          <p style="margin: 6px 0 0 44px; color: #94a3b8; font-size: 14px;">AI-powered test case execution via MCP agent
+          </p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-blue" id="exec-load-btn" onclick="loadTestCasesForExecution()">
+            📥 Load Test Cases
+          </button>
+          <button class="btn-green" id="exec-run-all-btn" onclick="runAllTestCases()" disabled>
+            ▶ Run All
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress Bar (hidden until Run All active) -->
+      <div id="exec-progress-wrap" style="display:none; margin-bottom:20px;">
+        <div class="modern-card" style="padding:16px 24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-weight:600; color:#fff;">⏳ Running test cases...</span>
+            <span id="exec-progress-label" style="color:#94a3b8; font-size:14px;">0 / 0 completed</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.08); border-radius:8px; height:8px; overflow:hidden;">
+            <div id="exec-progress-bar"
+              style="height:100%; width:0%; background:linear-gradient(90deg,#3b82f6,#8b5cf6); border-radius:8px; transition:width 0.4s ease;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div id="exec-stats-row" style="display:none; gap:16px; margin-bottom:20px; grid-template-columns:repeat(4,1fr);">
+        <div class="modern-card" style="padding:18px 24px; text-align:center; margin-bottom:0;">
+          <div style="font-size:28px; font-weight:700; color:#fff;" id="exec-stat-total">0</div>
+          <div style="color:#94a3b8; font-size:13px; margin-top:4px;">Total</div>
+        </div>
+        <div class="modern-card"
+          style="padding:18px 24px; text-align:center; margin-bottom:0; border-color:rgba(16,185,129,0.3);">
+          <div style="font-size:28px; font-weight:700; color:#10b981;" id="exec-stat-passed">0</div>
+          <div style="color:#94a3b8; font-size:13px; margin-top:4px;">Passed</div>
+        </div>
+        <div class="modern-card"
+          style="padding:18px 24px; text-align:center; margin-bottom:0; border-color:rgba(239,68,68,0.3);">
+          <div style="font-size:28px; font-weight:700; color:#ef4444;" id="exec-stat-failed">0</div>
+          <div style="color:#94a3b8; font-size:13px; margin-top:4px;">Failed</div>
+        </div>
+        <div class="modern-card"
+          style="padding:18px 24px; text-align:center; margin-bottom:0; border-color:rgba(245,158,11,0.3);">
+          <div style="font-size:28px; font-weight:700; color:#f59e0b;" id="exec-stat-blocked">0</div>
+          <div style="color:#94a3b8; font-size:13px; margin-top:4px;">Blocked</div>
+        </div>
+      </div>
+
+      <!-- Execution Table -->
+      <div class="modern-card" style="padding:0; overflow:hidden;">
+        <div
+          style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0; color:#fff; font-size:18px;">🧪 Test Cases</h3>
+          <span id="exec-empty-hint" style="color:#64748b; font-size:14px;">No test cases loaded — go to Test Cases page
+            and generate some first</span>
+        </div>
+        <div id="exec-table-wrap" style="overflow-x:auto; padding:20px;">
+          <div style="text-align:center; color:#9ca3af; padding:40px;">
+            <div style="font-size:48px; margin-bottom:10px; opacity:0.5;">▶️</div>
+            <p>Load test cases to begin execution</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="exec-video-modal"
+      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+      <div
+        style="position:relative; background:#0f172a; border-radius:16px; padding:24px; max-width:860px; width:90%; box-shadow:0 30px 60px rgba(0,0,0,0.6);">
+        <button onclick="closeExecVideoModal()"
+          style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:24px; cursor:pointer; color:#94a3b8;">✕</button>
+        <h3 style="margin:0 0 16px 0; color:#fff;">🎬 Execution Recording</h3>
+        <video id="exec-video-player" controls style="width:100%; border-radius:8px; background:#000;"></video>
+        <p id="exec-video-label" style="color:#64748b; font-size:13px; margin-top:10px;"></p>
       </div>
     </div>
 
   </div>
 
+  <!-- Chat Modal -->
+  <div id="chat-modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div
+      style="position:relative; width:500px; max-width:90%; background:white; padding:20px; border-radius:8px; display:flex; flex-direction:column; height:80vh; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <button onclick="closeChatModal()"
+        style="position:absolute; top:10px; right:10px; border:none; background:none; font-size:24px; cursor:pointer; color:#666;">&times;</button>
+      <h3 id="chat-title" style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;">Chat about Test Case
+      </h3>
+      <div id="chat-history"
+        style="flex:1; overflow-y:auto; padding:10px; margin-bottom:10px; background:#f9fafb; border-radius:4px; border:1px solid #e5e7eb;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="chat-input" placeholder="Ask a question..."
+          style="flex:1; padding:10px; border:1px solid #ccc; border-radius:4px;"
+          onkeydown="if(event.key === 'Enter') sendChatMessage()">
+        <button class="btn-blue" onclick="sendChatMessage()" id="send-chat-btn">Send</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Sidebar Navigation
     function showPage(pageId) {
       document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
       document.getElementById(pageId).style.display = 'block';
       document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
-      event.target.classList.add('active');
+      const activeLi = document.querySelector(`.sidebar li[onclick*="${pageId}"]`);
+      if (activeLi) {
+        activeLi.classList.add('active');
+      }
+
+      if (pageId === 'test-case') {
+        loadJiraProjectsForSelect('jira-project-select', (project) => {
+          document.getElementById('selected-project-name').textContent = `${project.name} (${project.key})`;
+          document.getElementById('jira-project-info').style.display = 'block';
+        });
+      } else if (pageId === 'bug-reporter') {
+        loadJiraProjectsForSelect('bug-jira-project-select', (project) => {
+          document.getElementById('bug-selected-project-name').textContent = `${project.name} (${project.key})`;
+          document.getElementById('bug-jira-project-info').style.display = 'block';
+          document.getElementById('bug-jira-upload-btn').style.display = 'inline-block';
+        });
+      } else if (pageId === 'execution') {
+        // Auto-load test cases if available
+        if (currentTableData && currentTableData.length > 1) {
+          loadTestCasesForExecution();
+        }
+      }
     }
+
+    function navigateTo(pageId) {
+      showPage(pageId);
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadJiraUserInfo();
+    });
 
     let loadingInterval;
 
@@ -211,7 +1135,7 @@
       loadingInterval = setInterval(() => {
         seconds++;
         const dots = ".".repeat((seconds % 4));
-        document.getElementById("loading-text").innerText = 
+        document.getElementById("loading-text").innerText =
           `⏳ Generating test plan${dots} (${seconds}s)`;
       }, 1000);
 
@@ -260,7 +1184,7 @@
       dataQualityLoadingInterval = setInterval(() => {
         seconds++;
         const dots = ".".repeat((seconds % 4));
-        document.getElementById("dq-loading-text").innerText = 
+        document.getElementById("dq-loading-text").innerText =
           `⏳ Generating data quality tests${dots} (${seconds}s)`;
       }, 1000);
 
@@ -287,253 +1211,1816 @@
       }
     }
 
-    // (Other existing JS functions for test case, bug report, and data generator remain unchanged)
-let currentTableData = []; // store table data for copy/export
-
-  async function generateTestCases() {
-    const input = document.getElementById("testcase-input").value.trim();
-    const resultDiv = document.getElementById("testcase-result");
-    const actionsDiv = document.getElementById("testcase-actions");
-
-    if (!input) {
-      resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter a user story or requirement first.</p>";
-      actionsDiv.style.display = "none";
-      return;
+    async function testMcbConnection() {
+      const statusDiv = document.getElementById("mcb-connection-status");
+      if (!statusDiv) {
+        return;
+      }
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "#374151";
+      statusDiv.textContent = "⏳ Testing connection to MCB server...";
+      try {
+        const response = await fetch("/mcb/test-connection");
+        const data = await response.json();
+        if (data.success) {
+          const version = data.version ? " (version " + data.version + ")" : "";
+          statusDiv.style.color = "#16a34a";
+          statusDiv.textContent = (data.message || "MCB Server connection successful") + version;
+        } else {
+          statusDiv.style.color = "#b91c1c";
+          statusDiv.textContent = data.error || "MCB Server connection failed";
+        }
+      } catch (error) {
+        statusDiv.style.color = "#b91c1c";
+        statusDiv.textContent = "MCB connection check failed: " + error.message;
+      }
     }
 
-    let seconds = 0;
-    resultDiv.innerHTML = `<p id="loading-text">⏳ Generating test cases... (0s)</p>`;
+    async function executeMcbWorkflow() {
+      const descriptionEl = document.getElementById("mcb-description");
+      const contextEl = document.getElementById("mcb-context");
+      const resultsDiv = document.getElementById("mcb-results");
+      const contentDiv = document.getElementById("mcb-results-content");
+      const executeBtn = document.getElementById("mcb-execute-btn");
 
-    // Dynamic waiting indicator
-    loadingInterval = setInterval(() => {
-      seconds++;
-      const dots = ".".repeat((seconds % 4)); // cycles from 0–3 dots
-      document.getElementById("loading-text").innerText = 
-        `⏳ Generating test plan${dots} (${seconds}s)`;
-    }, 1000);
+      if (!descriptionEl || !contentDiv || !resultsDiv || !executeBtn) {
+        return;
+      }
 
-    actionsDiv.style.display = "none";
+      const description = descriptionEl.value.trim();
+      if (!description) {
+        resultsDiv.style.display = "block";
+        contentDiv.innerHTML = "<p style='color:red;'>⚠️ Please describe the workflow first.</p>";
+        return;
+      }
 
-    try {
-      const response = await fetch("/generate-test-cases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_story: input })
+      let context = {};
+      const rawContext = contextEl ? contextEl.value.trim() : "";
+      if (rawContext) {
+        try {
+          context = JSON.parse(rawContext);
+        } catch (e) {
+          context = { notes: rawContext };
+        }
+      }
+
+      const originalText = executeBtn.innerHTML;
+      executeBtn.innerHTML = "⏳ Executing...";
+      executeBtn.disabled = true;
+
+      resultsDiv.style.display = "block";
+      contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 48px;">🤖</div>
+          <h3>Sending workflow to MCB</h3>
+          <p>MCB is executing your workflow...</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch("/mcb/execute-workflow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description, context })
+        });
+        const data = await response.json();
+        if (data.success) {
+          const workflow = data.workflow || {};
+          const execution = workflow.execution || {};
+          const runId = execution.run_id;
+          if (runId) {
+            contentDiv.innerHTML = `
+              <div style="margin-bottom: 12px;">
+                <h4 style="margin: 0 0 4px 0;">Workflow</h4>
+                <div style="font-size: 14px; color:#4b5563;">${workflow.description || description}</div>
+              </div>
+              <div style="margin-top: 8px;">
+                <h4 style="margin: 0 0 8px 0;">Execution Result</h4>
+                <div id="mcb-workflow-status" style="margin-bottom: 8px; font-size: 14px;"></div>
+                <pre id="mcb-workflow-logs" style="white-space:pre-wrap; text-align:left; background:#111827; color:#e5e7eb; padding:12px; border-radius:6px; max-height:260px; overflow:auto;"></pre>
+              </div>
+            `;
+            currentWorkflowRunId = runId;
+            pollWorkflowRun();
+          } else {
+            const pretty = typeof workflow === "string" ? workflow : JSON.stringify(workflow, null, 2);
+            contentDiv.innerHTML = `<pre style="white-space:pre-wrap; text-align:left; background:#f3f4f6; padding:10px; border-radius:6px;">${pretty}</pre>`;
+          }
+        } else {
+          contentDiv.innerHTML = `
+            <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 6px; padding: 15px;">
+              <h4 style="margin-top: 0; color: #7f1d1d;">❌ Execution Failed</h4>
+              <p><strong>Error:</strong> ${data.error || "Unknown error"}</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        contentDiv.innerHTML = `
+          <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 6px; padding: 15px;">
+            <h4 style="margin-top: 0; color: #7f1d1d;">❌ Network Error</h4>
+            <p><strong>Error:</strong> ${error.message}</p>
+          </div>
+        `;
+      } finally {
+        executeBtn.innerHTML = originalText;
+        executeBtn.disabled = false;
+      }
+    }
+
+    async function generatePlaywrightTest() {
+      const descriptionEl = document.getElementById("mcb-description");
+      const contextEl = document.getElementById("mcb-context");
+      const resultsDiv = document.getElementById("mcb-results");
+      const contentDiv = document.getElementById("mcb-results-content");
+      const generateBtn = document.getElementById("mcb-generate-playwright-btn");
+      if (!descriptionEl || !contentDiv || !resultsDiv || !generateBtn) {
+        return;
+      }
+      const description = descriptionEl.value.trim();
+      if (!description) {
+        resultsDiv.style.display = "block";
+        contentDiv.innerHTML = "<p style='color:red;'>⚠️ Please describe the workflow first.</p>";
+        return;
+      }
+      let context = {};
+      const rawContext = contextEl ? contextEl.value.trim() : "";
+      if (rawContext) {
+        try {
+          context = JSON.parse(rawContext);
+        } catch (e) {
+          context = { notes: rawContext };
+        }
+      }
+      const original = generateBtn.innerHTML;
+      generateBtn.innerHTML = "⏳ Generating...";
+      generateBtn.disabled = true;
+      resultsDiv.style.display = "block";
+      contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 48px;">🧩</div>
+          <h3>Generating Playwright test</h3>
+          <p>Parsing your description and creating a test file...</p>
+        </div>
+      `;
+      try {
+        const response = await fetch("/mcb/generate-playwright-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description, context })
+        });
+        const data = await response.json();
+        if (data.success) {
+          const code = data.code || "";
+          const download = data.download || "";
+          const filename = download ? download.split("/").pop() : "";
+          contentDiv.innerHTML = `
+            <div style="margin-bottom: 12px;">
+              <a href="${download}" class="btn-blue" download>⬇️ Download .spec.ts</a>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <button class="btn-blue" id="mcb-run-playwright-btn" ${filename ? "" : "disabled"} onclick="runPlaywrightTest('${filename}')">
+                ▶ Run Playwright Test (headed)
+              </button>
+            </div>
+            <div style="margin-top: 8px;">
+              <h4 style="margin: 0 0 8px 0;">Playwright Test</h4>
+              <pre style="white-space:pre-wrap; text-align:left; background:#0b1021; color:#e5e7eb; padding:12px; border-radius:6px; overflow:auto;">${code}</pre>
+            </div>
+            <div style="margin-top: 16px;">
+              <h4 style="margin: 0 0 8px 0;">Execution Logs</h4>
+              <div id="mcb-playwright-run-status" style="margin-bottom: 8px; font-size: 14px;"></div>
+              <pre id="mcb-playwright-logs" style="white-space:pre-wrap; text-align:left; background:#111827; color:#e5e7eb; padding:12px; border-radius:6px; max-height:260px; overflow:auto;"></pre>
+            </div>
+          `;
+        } else {
+          contentDiv.innerHTML = `
+            <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 6px; padding: 15px;">
+              <h4 style="margin-top: 0; color: #7f1d1d;">❌ Generation Failed</h4>
+              <p><strong>Error:</strong> ${data.error || "Unknown error"}</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        contentDiv.innerHTML = `
+          <div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 6px; padding: 15px;">
+            <h4 style="margin-top: 0; color: #7f1d1d;">❌ Network Error</h4>
+            <p><strong>Error:</strong> ${error.message}</p>
+          </div>
+        `;
+      } finally {
+        generateBtn.innerHTML = original;
+        generateBtn.disabled = false;
+      }
+    }
+
+    let currentPlaywrightRunId = null;
+    let playwrightRunTimer = null;
+    let currentWorkflowRunId = null;
+    let workflowRunTimer = null;
+
+    async function runPlaywrightTest(filename) {
+      if (!filename) {
+        return;
+      }
+      const statusEl = document.getElementById("mcb-playwright-run-status");
+      const logsEl = document.getElementById("mcb-playwright-logs");
+      const runBtn = document.getElementById("mcb-run-playwright-btn");
+      if (statusEl) statusEl.textContent = "Starting Playwright run...";
+      if (logsEl) logsEl.textContent = "";
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.textContent = "⏳ Running...";
+      }
+      try {
+        const response = await fetch("/mcb/run-playwright-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename })
+        });
+        const data = await response.json();
+        if (!data.success) {
+          if (statusEl) statusEl.textContent = "Run failed to start";
+          if (logsEl) logsEl.textContent = data.error || "Unknown error";
+          if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.textContent = "▶ Run Playwright Test (headed)";
+          }
+          return;
+        }
+        currentPlaywrightRunId = data.run_id;
+        if (statusEl) statusEl.textContent = "Playwright run started (headed). Browser window should be visible.";
+        pollPlaywrightRun();
+      } catch (e) {
+        if (statusEl) statusEl.textContent = "Run failed to start";
+        if (logsEl) logsEl.textContent = e.message || String(e);
+        if (runBtn) {
+          runBtn.disabled = false;
+          runBtn.textContent = "▶ Run Playwright Test (headed)";
+        }
+      }
+    }
+
+    async function pollPlaywrightRun() {
+      const runId = currentPlaywrightRunId;
+      if (!runId) {
+        return;
+      }
+      const statusEl = document.getElementById("mcb-playwright-run-status");
+      const logsEl = document.getElementById("mcb-playwright-logs");
+      const runBtn = document.getElementById("mcb-run-playwright-btn");
+      try {
+        const response = await fetch(`/mcb/playwright-run-status?run_id=${encodeURIComponent(runId)}`);
+        const data = await response.json();
+        if (!data.success) {
+          if (statusEl) statusEl.textContent = "Error reading run status";
+          if (logsEl) logsEl.textContent = data.error || "Unknown error";
+          if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.textContent = "▶ Run Playwright Test (headed)";
+          }
+          return;
+        }
+        if (logsEl && Array.isArray(data.logs)) {
+          logsEl.textContent = data.logs.join("\n");
+        }
+        if (statusEl) {
+          const rc = typeof data.returncode === "number" ? ` (exit code ${data.returncode})` : "";
+          statusEl.textContent = `Status: ${data.status || "unknown"}${rc}`;
+        }
+        if (data.status === "completed" || data.status === "failed") {
+          currentPlaywrightRunId = null;
+          if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.textContent = "▶ Run Playwright Test (headed)";
+          }
+          return;
+        }
+        playwrightRunTimer = setTimeout(pollPlaywrightRun, 2000);
+      } catch (e) {
+        if (statusEl) statusEl.textContent = "Error reading run status";
+        if (logsEl) logsEl.textContent = e.message || String(e);
+        if (runBtn) {
+          runBtn.disabled = false;
+          runBtn.textContent = "▶ Run Playwright Test (headed)";
+        }
+      }
+    }
+
+    async function pollWorkflowRun() {
+      const runId = currentWorkflowRunId;
+      if (!runId) {
+        return;
+      }
+      const statusEl = document.getElementById("mcb-workflow-status");
+      const logsEl = document.getElementById("mcb-workflow-logs");
+      const executeBtn = document.getElementById("mcb-execute-btn");
+      try {
+        const response = await fetch(`/mcb/playwright-run-status?run_id=${encodeURIComponent(runId)}`);
+        const data = await response.json();
+        if (!data.success) {
+          if (statusEl) statusEl.textContent = "Error reading run status";
+          if (logsEl) logsEl.textContent = data.error || "Unknown error";
+          if (executeBtn) {
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = "🚀 Execute Workflow";
+          }
+          return;
+        }
+        if (logsEl && Array.isArray(data.logs)) {
+          logsEl.textContent = data.logs.join("\n");
+        }
+        if (statusEl) {
+          const rc = typeof data.returncode === "number" ? ` (exit code ${data.returncode})` : "";
+          statusEl.textContent = `Status: ${data.status || "unknown"}${rc}`;
+        }
+        if (data.status === "completed" || data.status === "failed") {
+          currentWorkflowRunId = null;
+          if (executeBtn) {
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = "🚀 Execute Workflow";
+          }
+          return;
+        }
+        workflowRunTimer = setTimeout(pollWorkflowRun, 2000);
+      } catch (e) {
+        if (statusEl) statusEl.textContent = "Error reading run status";
+        if (logsEl) logsEl.textContent = e.message || String(e);
+        if (executeBtn) {
+          executeBtn.disabled = false;
+          executeBtn.innerHTML = "🚀 Execute Workflow";
+        }
+      }
+    }
+
+    // ===============================
+    // Jira Functions (Auto-connected after login)
+    // ===============================
+    let globalJiraProjects = [];
+
+    // Load Jira user info and projects on page load
+    async function loadJiraUserInfo() {
+      try {
+        const response = await fetch('/jira/user');
+        const data = await response.json();
+
+        if (data.connected) {
+          const sidebarUserEl = document.getElementById('sidebar-jira-user');
+          const sidebarEmailEl = document.getElementById('sidebar-jira-email');
+          if (sidebarUserEl) sidebarUserEl.textContent = data.user || 'Connected';
+          if (sidebarEmailEl) sidebarEmailEl.textContent = data.email || '';
+          const welcomeSection = document.getElementById('welcome-section');
+          const welcomeTitle = document.getElementById('welcome-title');
+          const welcomeSubtitle = document.getElementById('welcome-subtitle');
+          if (welcomeSection && welcomeTitle && welcomeSubtitle) {
+            welcomeTitle.textContent = `Welcome ${data.user || ''}`;
+            welcomeSubtitle.textContent = data.email ? `Signed in as ${data.email}` : '';
+            welcomeSection.style.display = 'block';
+          }
+          await loadJiraProjectsGlobal();
+        }
+      } catch (error) {
+        console.error('Error loading Jira user info:', error);
+      }
+    }
+
+    async function loadJiraProjectsGlobal() {
+      try {
+        const response = await fetch('/jira/projects');
+        const data = await response.json();
+
+        if (data.success) {
+          globalJiraProjects = data.projects;
+        } else {
+          console.error('Error loading projects:', data.error);
+        }
+      } catch (error) {
+        console.error('Error loading Jira projects:', error);
+      }
+    }
+
+    // Load projects for specific page selects
+    async function loadJiraProjectsForSelect(selectId, onSelectCallback) {
+      const projectSelect = document.getElementById(selectId);
+      if (!projectSelect) return;
+
+      const previousValue = projectSelect.value;
+      projectSelect.innerHTML = '<option value="">Loading projects...</option>';
+
+      try {
+        if (globalJiraProjects.length === 0) {
+          await loadJiraProjectsGlobal();
+        }
+
+        projectSelect.innerHTML = '<option value="">Select a project</option>';
+        globalJiraProjects.forEach(project => {
+          projectSelect.innerHTML += `<option value="${project.key}">${project.name} (${project.key})</option>`;
+        });
+
+        if (previousValue) {
+          const exists = globalJiraProjects.some(p => p.key === previousValue);
+          if (exists) {
+            projectSelect.value = previousValue;
+          }
+        }
+
+        if (onSelectCallback) {
+          projectSelect.onchange = function () {
+            const selectedKey = this.value;
+            const selectedProject = globalJiraProjects.find(p => p.key === selectedKey);
+            if (selectedProject && onSelectCallback) {
+              onSelectCallback(selectedProject);
+            }
+          };
+        }
+      } catch (error) {
+        console.error('Error loading Jira projects:', error);
+        projectSelect.innerHTML = `<option value="">Error: ${error.message}</option>`;
+      }
+    }
+
+    // ===============================
+    // Test Case Generator Functions
+    // ===============================
+    let currentTableData = [];
+    let currentReviewTableData = [];
+
+    async function generateTestCases() {
+      const input = document.getElementById("testcase-input").value.trim();
+      const resultDiv = document.getElementById("testcase-result");
+      const actionsDiv = document.getElementById("testcase-actions");
+
+      if (!input) {
+        resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter a user story or requirement first.</p>";
+        actionsDiv.style.display = "none";
+        return;
+      }
+
+      let seconds = 0;
+      resultDiv.innerHTML = `<p id="loading-text">⏳ Generating test cases... (0s)</p>`;
+
+      loadingInterval = setInterval(() => {
+        seconds++;
+        const dots = ".".repeat((seconds % 4));
+        document.getElementById("loading-text").innerText = `⏳ Generating test cases${dots} (${seconds}s)`;
+      }, 1000);
+
+      actionsDiv.style.display = "none";
+
+      try {
+        const response = await fetch("/generate-test-cases", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_story: input })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+        clearInterval(loadingInterval);
+
+        if (data.output) {
+          const { htmlTable, tableData } = markdownTableToHTML(data.output, 'testcase');
+          currentTableData = tableData;
+          resultDiv.innerHTML = htmlTable;
+          actionsDiv.style.display = "block";
+        } else {
+          resultDiv.innerHTML = "<p>⚠️ No test cases returned from server.</p>";
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message}</p>`;
+        actionsDiv.style.display = "none";
+      }
+    }
+
+    function markdownTableToHTML(markdown, tableType) {
+      const lines = markdown.trim().split("\n").filter(line => {
+        const trimmed = line.trim();
+        return trimmed &&
+          (trimmed.startsWith('|') || trimmed.includes('|')) &&
+          !trimmed.toLowerCase().includes('certainly') &&
+          !trimmed.toLowerCase().includes('below is a table') &&
+          !trimmed.toLowerCase().includes('here is a table');
       });
 
-      if (!response.ok) throw new Error("Server error: " + response.status);
+      const headerLineIndex = lines.findIndex(line => {
+        const cells = line.split('|').map(cell => cell.trim().replace(/\*\*/g, "")).filter(cell => cell);
+        return cells.length > 1 && !cells.some(cell =>
+          cell.toLowerCase().includes('certainly') ||
+          cell.toLowerCase().includes('below is')
+        );
+      });
 
-      const data = await response.json();
-clearInterval(loadingInterval);
-
-      if (data.output) {
-        const { htmlTable, tableData } = markdownTableToHTML(data.output);
-        currentTableData = tableData;
-        resultDiv.innerHTML = htmlTable;
-        actionsDiv.style.display = "block"; // show copy/download buttons
-      } else {
-        resultDiv.innerHTML = "<p>⚠️ No test cases returned from server.</p>";
+      if (headerLineIndex === -1) {
+        return { htmlTable: "<p>No valid table data found</p>", tableData: [] };
       }
-    } catch (error) {
-      resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message}</p>`;
+
+      const headers = lines[headerLineIndex].split("|").map(h => h.trim().replace(/\*\*/g, "")).filter(h => h);
+
+      let rows = lines
+        .slice(headerLineIndex + 1)
+        .map(line => line.split("|").map(cell => cell.trim().replace(/\*\*/g, "")).filter(cell => cell))
+        // drop markdown separator rows like |---|---|
+        .filter(row => !row.every(cell => /^:?-{2,}:?$/.test(cell)))
+        .filter(row => row.length >= headers.length);
+
+      let table = `<table style='width:100%;'>`;
+      table += "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "<th>Actions</th></tr></thead>";
+      table += "<tbody>";
+
+      rows.forEach((row, rowIndex) => {
+        table += "<tr data-row-index='" + rowIndex + "'>";
+        row.forEach((cell, cellIndex) => {
+          if (cellIndex < headers.length) {
+            table += `<td class='editable-cell' data-row='${rowIndex}' data-col='${cellIndex}'>${cell}</td>`;
+          }
+        });
+        table += `<td class='action-buttons'>
+                    <button class='btn-green' onclick='editRow(${rowIndex}, "${tableType}")'>Edit</button>
+                    <button class='btn-red' onclick='deleteRow(${rowIndex}, "${tableType}")'>Delete</button>
+                    ${tableType === 'testcase' ? `<button class='btn-blue' onclick='openChatForTestCase(${rowIndex})'>💬 Ask AI</button>` : ''}
+                  </td>`;
+        table += "</tr>";
+      });
+
+      table += "</tbody></table>";
+
+      return { htmlTable: table, tableData: [headers, ...rows] };
+    }
+
+    function getTableContainer(tableType) {
+      if (tableType === 'bugreport') return document.getElementById('bugreport-result');
+      if (tableType === 'data') return document.getElementById('datagenerator-result');
+      return document.getElementById('testcase-result');
+    }
+
+    function editRow(rowIndex, tableType) {
+      const container = getTableContainer(tableType);
+      if (!container) return;
+
+      const row = container.querySelector(`tr[data-row-index="${rowIndex}"]`);
+      const cells = row.querySelectorAll('.editable-cell');
+      const editButton = row.querySelector('.btn-green');
+
+      if (editButton.textContent === 'Save') {
+        saveRowChanges(rowIndex, tableType, cells);
+        editButton.textContent = 'Edit';
+        editButton.onclick = () => editRow(rowIndex, tableType);
+        return;
+      }
+
+      editButton.textContent = 'Save';
+
+      cells.forEach((cell, cellIndex) => {
+        const currentValue = cell.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentValue;
+        input.style.width = '100%';
+        input.style.padding = '4px';
+        input.style.boxSizing = 'border-box';
+        input.dataset.originalValue = currentValue;
+
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        cell.classList.add('editing');
+
+        if (cellIndex === 0) input.focus();
+      });
+
+      editButton.onclick = () => {
+        saveRowChanges(rowIndex, tableType, cells);
+        editButton.textContent = 'Edit';
+        editButton.onclick = () => editRow(rowIndex, tableType);
+      };
+    }
+
+    function saveRowChanges(rowIndex, tableType, cells) {
+      const newRowData = [];
+
+      cells.forEach((cell, cellIndex) => {
+        const input = cell.querySelector('input');
+        if (input) {
+          const newValue = input.value;
+          cell.innerHTML = newValue;
+          cell.classList.remove('editing');
+          newRowData[cellIndex] = newValue;
+
+          if (tableType === 'testcase') {
+            currentTableData[rowIndex + 1][cellIndex] = newValue;
+          } else if (tableType === 'bugreport') {
+            bugReportTableData[rowIndex + 1][cellIndex] = newValue;
+          } else if (tableType === 'data') {
+            dataTableData[rowIndex + 1][cellIndex] = newValue;
+          }
+        }
+      });
+    }
+
+    function deleteRow(rowIndex, tableType) {
+      if (!confirm('Are you sure you want to delete this row?')) return;
+
+      const container = getTableContainer(tableType);
+      if (!container) return;
+
+      if (tableType === 'testcase') {
+        currentTableData.splice(rowIndex + 1, 1);
+        const { htmlTable } = markdownTableToHTMLFromData(currentTableData, 'testcase');
+        container.innerHTML = htmlTable;
+      } else if (tableType === 'bugreport') {
+        bugReportTableData.splice(rowIndex + 1, 1);
+        const { htmlTable } = markdownTableToHTMLFromData(bugReportTableData, 'bugreport');
+        container.innerHTML = htmlTable;
+      }
+    }
+
+    function markdownTableToHTMLFromData(tableData, tableType) {
+      const headers = tableData[0].map(h => typeof h === "string" ? h.replace(/\*\*/g, "") : h);
+      const rows = tableData.slice(1);
+
+      let table = `<table style='width:100%;'>`;
+      table += "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "<th>Actions</th></tr></thead>";
+      table += "<tbody>";
+
+      rows.forEach((row, rowIndex) => {
+        table += "<tr data-row-index='" + rowIndex + "'>";
+        row.forEach((cell, cellIndex) => {
+          table += `<td class='editable-cell' data-row='${rowIndex}' data-col='${cellIndex}'>${cell}</td>`;
+        });
+        table += `<td class='action-buttons'>
+                    <button class='btn-green' onclick='editRow(${rowIndex}, "${tableType}")'>Edit</button>
+                    <button class='btn-red' onclick='deleteRow(${rowIndex}, "${tableType}")'>Delete</button>
+                    ${tableType === 'testcase' ? `<button class='btn-blue' onclick='openChatForTestCase(${rowIndex})'>💬 Ask AI</button>` : ''}
+                  </td>`;
+        table += "</tr>";
+      });
+
+      table += "</tbody></table>";
+
+      return { htmlTable: table, tableData: tableData };
+    }
+
+    function copyTable() {
+      const text = currentTableData.map(row => row.join("\t")).join("\n");
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Table copied to clipboard!");
+      }).catch(err => {
+        alert("❌ Failed to copy: " + err);
+      });
+    }
+
+    function downloadExcel() {
+      let csvContent = currentTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "test_cases.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    async function uploadToXray() {
+      // Read story name from the div's textContent (it's a div, not an input)
+      const selectedDivEl = document.getElementById('jira-selected-issue');
+      const selectedDivText = (selectedDivEl ? selectedDivEl.textContent : '').trim();
+      // Parse the story name after the first " - " separator (format: "KEY - Summary")
+      const storyName = selectedDivText.includes(' - ')
+        ? selectedDivText.substring(selectedDivText.indexOf(' - ') + 3).trim()
+        : selectedDivText;
+
+      const projectSelect = document.getElementById('jira-project-select');
+      const selectedProject = projectSelect.value;
+      const issueKey = document.getElementById('jira-issue-key').value.trim();
+      const testSetKey = document.getElementById('jira-testset-key').value.trim();
+      const autoCreateTestSet = document.getElementById('auto-create-testset').checked;
+
+      if (!selectedProject) {
+        alert('⚠️ Please select a Jira project first');
+        return;
+      }
+
+      if (!currentTableData || currentTableData.length < 2) {
+        alert("⚠️ No test cases available to upload");
+        return;
+      }
+
+      if (!confirm(`Upload test cases to Xray for project ${selectedProject}${issueKey ? ' and link to ' + issueKey : ''}?`)) {
+        return;
+      }
+
+      const uploadButton = document.getElementById('jira-upload-btn');
+      const originalText = uploadButton.innerHTML;
+      uploadButton.innerHTML = '⏳ Uploading...';
+      uploadButton.disabled = true;
+
+      try {
+        const response = await fetch("/xray/import-tests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            table_data: currentTableData,
+            project_key: selectedProject,
+            issue_key: issueKey,
+            test_set_key: testSetKey,
+            create_test_set_from_story: autoCreateTestSet,
+            selected_issue_name: storyName || null,
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          let msg = `✅ Successfully imported test cases to Xray!\n\nProject: ${selectedProject}\nStatus: ${data.result?.status || 'Completed'}`;
+
+          const linkedCount = data.result?.result?.linked_count !== undefined ? data.result?.result?.linked_count : data.result?.linked_count;
+          const linkedIssue = data.result?.result?.linked_issue || data.result?.linked_issue;
+          const linkingError = data.result?.result?.linking_error || data.result?.linking_error;
+
+          if (linkedCount) {
+            msg += `\n🔗 Linked ${linkedCount} tests to ${linkedIssue}`;
+          } else if (document.getElementById('jira-issue-key').value && linkedCount === 0) {
+            msg += `\n⚠️ 0 tests linked to ${document.getElementById('jira-issue-key').value}.`;
+          }
+
+          if (linkingError) {
+            msg += `\n⚠️ Linking error: ${linkingError}`;
+          }
+
+          alert(msg);
+        } else {
+          alert("❌ Error uploading to Xray: " + data.error);
+        }
+      } catch (error) {
+        alert("❌ Error uploading to Xray: " + error.message);
+      } finally {
+        uploadButton.innerHTML = originalText;
+        uploadButton.disabled = false;
+      }
+    }
+
+    let jiraIssueResults = [];
+
+    async function searchUserStories() {
+      const projectSelect = document.getElementById('jira-project-select');
+      const selectedProject = projectSelect.value;
+      const q = document.getElementById('jira-issue-search').value.trim();
+      const resultsDiv = document.getElementById('jira-issue-results');
+      const selectedDiv = document.getElementById('jira-selected-issue');
+
+      selectedDiv.style.display = 'none';
+      selectedDiv.textContent = '';
+
+      if (!selectedProject) {
+        alert('⚠️ Please select a Jira project first');
+        return;
+      }
+
+      resultsDiv.innerHTML = '🔎 Searching...';
+
+      try {
+        const url = `/jira/issues?projectKey=${encodeURIComponent(selectedProject)}${q ? '&q=' + encodeURIComponent(q) : ''}`;
+        const response = await fetch(url, { method: 'GET' });
+        const data = await response.json();
+        if (data.success) {
+          jiraIssueResults = data.issues || [];
+          renderIssueResults(jiraIssueResults);
+        } else {
+          resultsDiv.innerHTML = `<p style="color:red;">${data.error || 'Search failed'}</p>`;
+        }
+      } catch (e) {
+        resultsDiv.innerHTML = `<p style="color:red;">${e.message}</p>`;
+      }
+    }
+
+    function renderIssueResults(issues) {
+      const resultsDiv = document.getElementById('jira-issue-results');
+      if (!issues || issues.length === 0) {
+        resultsDiv.innerHTML = `<p style="color:#666;">No stories found</p>`;
+        return;
+      }
+      let html = `<div style="max-height: 220px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 4px;">`;
+      issues.forEach((issue, idx) => {
+        const summary = (issue.summary || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        html += `
+          <div style="padding:8px; cursor:pointer; border-bottom:1px solid #eee;" onclick="selectUserStory(${idx})">
+            <strong>${issue.key}</strong> - ${summary}
+          </div>
+        `;
+      });
+      html += `</div>`;
+      resultsDiv.innerHTML = html;
+    }
+
+    function selectUserStory(index) {
+      const issue = jiraIssueResults[index];
+      if (!issue) return;
+      document.getElementById('jira-issue-key').value = issue.key || '';
+      const desc = issue.description || '';
+      const summary = issue.summary || '';
+      document.getElementById('testcase-input').value = `${summary}\n\n${desc}`.trim();
+      const selectedDiv = document.getElementById('jira-selected-issue');
+      selectedDiv.textContent = `Selected: ${issue.key} - ${summary}`;
+      selectedDiv.style.display = 'block';
+
+      // Clear results list to clean up UI
+      document.getElementById('jira-issue-results').innerHTML = '';
+    }
+
+    async function searchBugUserStories() {
+      const projectSelect = document.getElementById('bug-jira-project-select');
+      const selectedProject = projectSelect.value;
+      const q = document.getElementById('bug-jira-issue-key').value.trim();
+      const resultsDiv = document.getElementById('bug-jira-issue-results');
+      const selectedDiv = document.getElementById('bug-jira-selected-issue');
+
+      selectedDiv.style.display = 'none';
+      selectedDiv.textContent = '';
+
+      if (!selectedProject) {
+        alert('⚠️ Please select a Jira project first');
+        return;
+      }
+
+      resultsDiv.innerHTML = '🔎 Searching...';
+
+      try {
+        const url = `/jira/issues?projectKey=${encodeURIComponent(selectedProject)}${q ? '&q=' + encodeURIComponent(q) : ''}`;
+        const response = await fetch(url, { method: 'GET' });
+        const data = await response.json();
+        if (data.success) {
+          const issues = data.issues || [];
+          if (!issues.length) {
+            resultsDiv.innerHTML = `<p style="color:#666;">No stories found</p>`;
+            return;
+          }
+          let html = `<div style="max-height: 220px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 4px;">`;
+          issues.forEach((issue, idx) => {
+            const summary = (issue.summary || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += `
+              <div style="padding:8px; cursor:pointer; border-bottom:1px solid #eee;" onclick="selectBugUserStory(${idx})">
+                <strong>${issue.key}</strong> - ${summary}
+              </div>
+            `;
+          });
+          html += `</div>`;
+          resultsDiv.innerHTML = html;
+          window.bugJiraIssueResults = issues;
+        } else {
+          resultsDiv.innerHTML = `<p style="color:red;">${data.error || 'Search failed'}</p>`;
+        }
+      } catch (e) {
+        resultsDiv.innerHTML = `<p style="color:red;">${e.message}</p>`;
+      }
+    }
+
+    function selectBugUserStory(index) {
+      const issues = window.bugJiraIssueResults || [];
+      const issue = issues[index];
+      if (!issue) return;
+      document.getElementById('bug-jira-issue-key').value = issue.key || '';
+      const summary = issue.summary || '';
+      const selectedDiv = document.getElementById('bug-jira-selected-issue');
+      selectedDiv.textContent = `Selected: ${issue.key} - ${summary}`;
+      selectedDiv.style.display = 'block';
+      document.getElementById('bug-jira-issue-results').innerHTML = '';
+    }
+
+    // ===============================
+    // Bug Reporter Functions
+    // ===============================
+    let bugReportTableData = [];
+    let bugLoadingInterval;
+
+    // Wrapper function for backward compatibility
+    function loadBugJiraProjects() {
+      loadJiraProjectsForSelect('bug-jira-project-select', (project) => {
+        document.getElementById('bug-selected-project-name').textContent = `${project.name} (${project.key})`;
+        document.getElementById('bug-jira-project-info').style.display = 'block';
+        document.getElementById('bug-jira-upload-btn').style.display = 'inline-block';
+      });
+    }
+
+    async function generateBugReport() {
+      const input = document.getElementById("bugreport-input").value.trim();
+      const resultDiv = document.getElementById("bugreport-result");
+      const actionsDiv = document.getElementById("bugreport-actions");
+
+      if (!input) {
+        resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter a bug description first.</p>";
+        actionsDiv.style.display = "none";
+        return;
+      }
+
+      // Auto-load Jira projects when generating bug report
+      await loadJiraProjectsForSelect('bug-jira-project-select', (project) => {
+        document.getElementById('bug-selected-project-name').textContent = `${project.name} (${project.key})`;
+        document.getElementById('bug-jira-project-info').style.display = 'block';
+        document.getElementById('bug-jira-upload-btn').style.display = 'inline-block';
+      });
+
+      let seconds = 0;
+      resultDiv.innerHTML = `<p id="bug-loading-text">⏳ Generating bug report... (0s)</p>`;
       actionsDiv.style.display = "none";
+
+      bugLoadingInterval = setInterval(() => {
+        seconds++;
+        const dots = ".".repeat((seconds % 4));
+        document.getElementById("bug-loading-text").innerText =
+          `⏳ Generating bug report${dots} (${seconds}s)`;
+      }, 1000);
+
+      try {
+        const response = await fetch("/generate-bug-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bugs: input })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+        clearInterval(bugLoadingInterval);
+
+        if (data.output) {
+          const { htmlTable, tableData } = markdownTableToHTML(data.output, 'bugreport');
+          bugReportTableData = tableData;
+          resultDiv.innerHTML = htmlTable;
+          actionsDiv.style.display = "block";
+        } else {
+          resultDiv.innerHTML = "<p>⚠️ No bug report returned from server.</p>";
+        }
+      } catch (error) {
+        clearInterval(bugLoadingInterval);
+        resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
+        actionsDiv.style.display = "none";
+      }
     }
-  }
 
-  // Convert Markdown to HTML + store data for copy/export
-  function markdownTableToHTML(markdown) {
-    const lines = markdown.trim().split("\n").filter(line => line.trim() && !line.startsWith("|-"));
-    const headers = lines[0].split("|").map(h => h.trim()).filter(h => h);
-    const rows = lines.slice(1).map(line =>
-      line.split("|").map(cell => cell.trim()).filter(cell => cell)
-    );
+    async function uploadBugsToJira() {
+      const projectSelect = document.getElementById('bug-jira-project-select');
+      const selectedProject = projectSelect.value;
+      const issueKey = document.getElementById('bug-jira-issue-key').value.trim();
 
-    let table = "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%;'>";
-    table += "<thead><tr>" + headers.map(h => `<th style='background:#f3f4f6;'>${h}</th>`).join("") + "</tr></thead>";
-    table += "<tbody>";
-    rows.forEach(row => {
-      table += "<tr>" + row.map(c => `<td>${c}</td>`).join("") + "</tr>";
-    });
-    table += "</tbody></table>";
+      if (!selectedProject) {
+        alert('⚠️ Please select a project first');
+        return;
+      }
 
-    return { htmlTable: table, tableData: [headers, ...rows] };
-  }
+      if (!bugReportTableData || bugReportTableData.length < 2) {
+        alert("⚠️ No bugs available to upload");
+        return;
+      }
 
-  // Copy table to clipboard
-  function copyTable() {
-    const text = currentTableData.map(row => row.join("\t")).join("\n");
-    navigator.clipboard.writeText(text).then(() => {
-      alert("✅ Table copied to clipboard!");
-    }).catch(err => {
-      alert("❌ Failed to copy: " + err);
-    });
-  }
+      if (!confirm(`Upload ${bugReportTableData.length - 1} bugs to Jira for project ${selectedProject}${issueKey ? ' and link to ' + issueKey : ''}?`)) {
+        return;
+      }
 
-  // Download as CSV (Excel-compatible)
-  function downloadExcel() {
-    let csvContent = currentTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "test_cases.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-let bugReportTableData = [];
-let bugLoadingInterval;
+      const uploadButton = document.getElementById('bug-jira-upload-btn');
+      const originalText = uploadButton.innerHTML;
+      uploadButton.innerHTML = '⏳ Uploading...';
+      uploadButton.disabled = true;
 
-async function generateBugReport() {
-  const input = document.getElementById("bugreport-input").value.trim();
-  const resultDiv = document.getElementById("bugreport-result");
-  const actionsDiv = document.getElementById("bugreport-actions");
+      try {
+        const response = await fetch("/jira/import-bugs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            table_data: bugReportTableData,
+            project_key: selectedProject,
+            issue_key: issueKey
+          })
+        });
 
-  if (!input) {
-    resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter a bug description first.</p>";
-    actionsDiv.style.display = "none";
-    return;
-  }
+        const data = await response.json();
 
-  let seconds = 0;
-  resultDiv.innerHTML = `<p id="bug-loading-text">⏳ Generating bug report... (0s)</p>`;
-  actionsDiv.style.display = "none";
+        if (data.success) {
+          let msg = `✅ Successfully uploaded bugs to Jira!\n\nProject: ${selectedProject}\nUploaded: ${data.result?.created || 'Multiple'} bugs`;
 
-  // Dynamic waiting indicator
-  bugLoadingInterval = setInterval(() => {
-    seconds++;
-    const dots = ".".repeat((seconds % 4));
-    document.getElementById("bug-loading-text").innerText =
-      `⏳ Generating bug report${dots} (${seconds}s)`;
-  }, 1000);
+          const linkedCount = data.result?.linked_count;
+          const linkedIssue = data.result?.linked_issue;
+          const linkingError = data.result?.linking_error;
 
-  try {
-    const response = await fetch("/generate-bug-report", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bugs: input })
-    });
+          if (linkedCount) {
+            msg += `\n🔗 Linked ${linkedCount} bugs to ${linkedIssue}`;
+          } else if (issueKey && linkedCount === 0) {
+            msg += `\n⚠️ 0 bugs linked to ${issueKey}.`;
+          }
 
-    if (!response.ok) throw new Error("Server error: " + response.status);
+          if (linkingError) {
+            msg += `\n⚠️ Linking error: ${linkingError}`;
+          }
 
-    const data = await response.json();
-    clearInterval(bugLoadingInterval);
-
-    if (data.output) {
-      const { htmlTable, tableData } = markdownTableToHTML(data.output);
-      bugReportTableData = tableData;
-      resultDiv.innerHTML = htmlTable;
-      actionsDiv.style.display = "block";
-    } else {
-      resultDiv.innerHTML = "<p>⚠️ No bug report returned from server.</p>";
+          alert(msg);
+        } else {
+          alert("❌ Error uploading to Jira: " + data.error);
+        }
+      } catch (error) {
+        alert("❌ Error uploading to Jira: " + error.message);
+      } finally {
+        uploadButton.innerHTML = originalText;
+        uploadButton.disabled = false;
+      }
     }
-  } catch (error) {
-    clearInterval(bugLoadingInterval);
-    resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
-    actionsDiv.style.display = "none";
-  }
-}
 
-// Copy bug report table
-function copyBugReport() {
-  const text = bugReportTableData.map(row => row.join("\t")).join("\n");
-  navigator.clipboard.writeText(text).then(() => {
-    alert("✅ Bug report table copied to clipboard!");
-  }).catch(err => {
-    alert("❌ Failed to copy: " + err);
-  });
-}
-
-// Download bug report as CSV
-function downloadBugReport() {
-  let csvContent = bugReportTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "bug_report.csv";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-let dataTableData = [];
-let dataLoadingInterval;
-
-async function generateData() {
-  const input = document.getElementById("datagenerator-input").value.trim();
-  const resultDiv = document.getElementById("datagenerator-result");
-  const actionsDiv = document.getElementById("datagenerator-actions");
-
-  if (!input) {
-    resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter data requirements first.</p>";
-    actionsDiv.style.display = "none";
-    return;
-  }
-
-  let seconds = 0;
-  resultDiv.innerHTML = `<p id="data-loading-text">⏳ Generating data... (0s)</p>`;
-  actionsDiv.style.display = "none";
-
-  // Dynamic waiting indicator
-  dataLoadingInterval = setInterval(() => {
-    seconds++;
-    const dots = ".".repeat((seconds % 4));
-    document.getElementById("data-loading-text").innerText =
-      `⏳ Generating data${dots} (${seconds}s)`;
-  }, 1000);
-
-  try {
-    const response = await fetch("/generate-data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: input })
-    });
-
-    if (!response.ok) throw new Error("Server error: " + response.status);
-
-    const data = await response.json();
-    clearInterval(dataLoadingInterval);
-
-    if (data.output) {
-      const { htmlTable, tableData } = markdownTableToHTML(data.output);
-      dataTableData = tableData;
-      resultDiv.innerHTML = htmlTable;
-      actionsDiv.style.display = "block";
-    } else {
-      resultDiv.innerHTML = "<p>⚠️ No data returned from server.</p>";
+    function copyBugReport() {
+      const text = bugReportTableData.map(row => row.join("\t")).join("\n");
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Bug report table copied to clipboard!");
+      }).catch(err => {
+        alert("❌ Failed to copy: " + err);
+      });
     }
-  } catch (error) {
-    clearInterval(dataLoadingInterval);
-    resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
-    actionsDiv.style.display = "none";
-  }
-}
 
-// Copy data table
-function copyData() {
-  const text = dataTableData.map(row => row.join("\t")).join("\n");
-  navigator.clipboard.writeText(text).then(() => {
-    alert("✅ Data table copied to clipboard!");
-  }).catch(err => {
-    alert("❌ Failed to copy: " + err);
-  });
-}
+    function downloadBugReport() {
+      let csvContent = bugReportTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "bug_report.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
-// Download data as CSV (Excel-compatible)
-function downloadData() {
-  let csvContent = dataTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "generated_data.csv";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+    // ===============================
+    // Chat Functions
+    // ===============================
+    let currentChatTestCase = null;
+    let chatHistory = [];
+
+    function openChatForTestCase(rowIndex) {
+      // Get row data from the global currentTableData
+      // currentTableData structure: [headers, row1, row2, ...]
+      // rowIndex corresponds to the data row index (0-based from rows only)
+      // So we need to add 1 to skip the header row
+      const rowData = currentTableData[rowIndex + 1];
+
+      if (!rowData) {
+        console.error('No data found for row', rowIndex);
+        return;
+      }
+
+      // Map columns (assuming standard generated structure: ID, Description, Steps, Expected)
+      // If table structure varies, this might need dynamic mapping based on headers
+      const testCase = {
+        id: rowData[0],
+        description: rowData[1],
+        steps: rowData[2],
+        expected_result: rowData[3]
+      };
+
+      currentChatTestCase = testCase;
+      chatHistory = []; // Reset history
+
+      document.getElementById('chat-title').textContent = `Chat about ${testCase.id || 'Test Case'}`;
+      document.getElementById('chat-history').innerHTML = `
+        <div style="margin-bottom:10px; padding:10px; background:#e0f2fe; border-radius:8px; color:#0369a1;">
+          <strong>AI:</strong> Hi! I'm ready to discuss this test case.<br>
+          <em>"${testCase.description}"</em>
+        </div>
+      `;
+      document.getElementById('chat-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('chat-input').focus(), 100);
+    }
+
+    function closeChatModal() {
+      document.getElementById('chat-modal').style.display = 'none';
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      const historyDiv = document.getElementById('chat-history');
+
+      // User message
+      historyDiv.innerHTML += `
+        <div style="margin-bottom:10px; padding:10px; background:#f3f4f6; border-radius:8px; text-align:right; margin-left:20%;">
+          <strong>You:</strong> ${message}
+        </div>
+      `;
+      input.value = '';
+      historyDiv.scrollTop = historyDiv.scrollHeight;
+
+      // Add to history
+      chatHistory.push({ sender: 'user', text: message });
+
+      // Show loading
+      const loadingId = 'loading-' + Date.now();
+      historyDiv.innerHTML += `
+        <div id="${loadingId}" style="margin-bottom:10px; padding:10px; background:#fff; border-radius:8px; border:1px solid #eee;">
+          <strong>AI:</strong> ⏳ Thinking...
+        </div>
+      `;
+      historyDiv.scrollTop = historyDiv.scrollHeight;
+
+      try {
+        const userStory = document.getElementById('testcase-input').value;
+
+        const response = await fetch('/chat-about-testcase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            test_case: currentChatTestCase,
+            user_story: userStory,
+            message: message,
+            history: chatHistory
+          })
+        });
+
+        const data = await response.json();
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) loadingEl.remove();
+
+        if (data.reply) {
+          // Simple markdown-ish formatting for line breaks and bold
+          let formattedReply = data.reply
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+          historyDiv.innerHTML += `
+            <div style="margin-bottom:10px; padding:10px; background:#fff; border-radius:8px; border:1px solid #eee;">
+              <strong>AI:</strong> ${formattedReply}
+            </div>
+          `;
+          chatHistory.push({ sender: 'ai', text: data.reply });
+        } else {
+          historyDiv.innerHTML += `<div style="color:red; margin-bottom:10px;">❌ Error: ${data.error || 'Unknown error'}</div>`;
+        }
+      } catch (error) {
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) loadingEl.remove();
+        historyDiv.innerHTML += `<div style="color:red; margin-bottom:10px;">❌ Error: ${error.message}</div>`;
+      }
+
+      historyDiv.scrollTop = historyDiv.scrollHeight;
+    }
+
+    // ===============================
+    // Data Generator Functions
+    // ===============================
+    let dataTableData = [];
+    let dataLoadingInterval;
+
+    async function generateData() {
+      const input = document.getElementById("datagenerator-input").value.trim();
+      const resultDiv = document.getElementById("datagenerator-result");
+      const actionsDiv = document.getElementById("datagenerator-actions");
+
+      if (!input) {
+        resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter data requirements first.</p>";
+        actionsDiv.style.display = "none";
+        return;
+      }
+
+      let seconds = 0;
+      resultDiv.innerHTML = `<p id="data-loading-text">⏳ Generating data... (0s)</p>`;
+      actionsDiv.style.display = "none";
+
+      dataLoadingInterval = setInterval(() => {
+        seconds++;
+        const dots = ".".repeat((seconds % 4));
+        document.getElementById("data-loading-text").innerText =
+          `⏳ Generating data${dots} (${seconds}s)`;
+      }, 1000);
+
+      try {
+        const response = await fetch("/generate-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input: input })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+
+        const data = await response.json();
+        clearInterval(dataLoadingInterval);
+
+        if (data.output) {
+          const { htmlTable, tableData } = markdownTableToHTML(data.output, 'data');
+          dataTableData = tableData;
+          resultDiv.innerHTML = htmlTable;
+          actionsDiv.style.display = "block";
+        } else {
+          resultDiv.innerHTML = "<p>⚠️ No data returned from server.</p>";
+        }
+      } catch (error) {
+        clearInterval(dataLoadingInterval);
+        resultDiv.innerHTML = `<p style='color:red;'>❌ Error: ${error.message} (after ${seconds}s)</p>`;
+        actionsDiv.style.display = "none";
+      }
+    }
+
+    function copyData() {
+      const text = dataTableData.map(row => row.join("\t")).join("\n");
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Data table copied to clipboard!");
+      }).catch(err => {
+        alert("❌ Failed to copy: " + err);
+      });
+    }
+
+    function downloadData() {
+      let csvContent = dataTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "generated_data.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Logout function
+    async function logout() {
+      if (!confirm('Are you sure you want to logout?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          window.location.href = '/login';
+        } else {
+          alert('Logout failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Force redirect even if request fails
+        window.location.href = '/login';
+      }
+    }
+
+    // Initialize
+    showPage('test-plan');
+
+
+    // ===============================
+    // New Feature Functions
+    // ===============================
+
+
+    function switchTestCaseTab(tabName) {
+      const genTab = document.getElementById('test-case-generation-tab');
+      const revTab = document.getElementById('test-case-review-tab');
+      const genBtn = document.getElementById('tab-generator');
+      const revBtn = document.getElementById('tab-review');
+
+      if (tabName === 'generation') {
+        genTab.style.display = 'block';
+        revTab.style.display = 'none';
+        genBtn.style.color = '#fff';
+        genBtn.style.borderBottomColor = '#3b82f6';
+        revBtn.style.color = '#94a3b8';
+        revBtn.style.borderBottomColor = 'transparent';
+      } else {
+        genTab.style.display = 'none';
+        revTab.style.display = 'block';
+        revBtn.style.color = '#fff';
+        revBtn.style.borderBottomColor = '#3b82f6';
+        genBtn.style.color = '#94a3b8';
+        genBtn.style.borderBottomColor = 'transparent';
+      }
+    }
+
+    async function reviewTestCases() {
+      const resultDiv = document.getElementById("review-tests-result");
+      const reviewCard = document.getElementById("review-tests-card");
+
+      if (!currentTableData || currentTableData.length === 0) {
+        alert("Please generate test cases first before reviewing them.");
+        return;
+      }
+
+
+      switchTestCaseTab('review'); // Auto switch tab!
+      reviewCard.style.display = "block";
+      resultDiv.innerHTML = `<p id="loading-text-review" style="color:#fff; padding: 20px;">⏳ Reviewing test cases... this could take a minute...</p>`;
+
+      try {
+        const response = await fetch("/review-test-cases", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ test_cases: JSON.stringify(currentTableData) })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+
+        let { htmlTable, tableData } = markdownTableToHTML(data.output, 'reviewcase');
+        currentReviewTableData = tableData;
+        if (htmlTable.includes("No valid table data found")) {
+          htmlTable = `<pre style="color: #fff; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; font-family: monospace; white-space: pre-wrap;">${data.output}</pre>`;
+        }
+        resultDiv.innerHTML = htmlTable;
+      } catch (error) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Error: ${error.message}</p>`;
+      }
+    }
+
+    async function analyseRequirements() {
+      const input = document.getElementById("req-analysis-input").value.trim();
+      const resultDiv = document.getElementById("req-analysis-result");
+
+      if (!input) {
+        resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter some requirements.</p>";
+        return;
+      }
+
+      resultDiv.innerHTML = `<p style="color:#fff;">⏳ Analyzing requirements...</p>`;
+
+      switchReqTab('analysis');
+      try {
+        const response = await fetch("/analyse-req", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_story: input })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+
+        let { htmlTable, tableData } = markdownTableToHTML(data.output, 'analysisreq');
+        currentAnalysisTableData = tableData;
+        if (htmlTable.includes("No valid table data found")) {
+          htmlTable = `<pre style="color: #fff; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; font-family: monospace; white-space: pre-wrap;">${data.output}</pre>`;
+        }
+        resultDiv.innerHTML = htmlTable;
+      } catch (error) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Error: ${error.message}</p>`;
+      }
+    }
+
+    async function generateHighLevelScenarios() {
+      const input = document.getElementById("req-analysis-input").value.trim();
+      const resultDiv = document.getElementById("req-scenario-result");
+
+      if (!input) {
+        resultDiv.innerHTML = "<p style='color:red;'>⚠️ Please enter some requirements.</p>";
+        return;
+      }
+
+      resultDiv.innerHTML = `<p style="color:#fff;">⏳ Generating High-Level Scenarios...</p>`;
+
+      switchReqTab('scenario');
+      try {
+        const response = await fetch("/generate-hls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_story: input })
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+
+        let { htmlTable, tableData } = markdownTableToHTML(data.output, 'hls');
+        currentHlsTableData = tableData;
+        if (htmlTable.includes("No valid table data found")) {
+          htmlTable = `<pre style="color: #fff; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; font-family: monospace; white-space: pre-wrap;">${data.output}</pre>`;
+        }
+        resultDiv.innerHTML = htmlTable;
+      } catch (error) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Error: ${error.message}</p>`;
+      }
+    }
+
+
+    function copyReviewTable() {
+      if (!currentReviewTableData || currentReviewTableData.length === 0) return alert("Nothing to copy!");
+      const text = currentReviewTableData.map(row => row.join("\t")).join("\n");
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Table copied to clipboard!");
+      }).catch(err => {
+        alert("❌ Failed to copy: " + err);
+      });
+    }
+
+    function downloadReviewCSV() {
+      if (!currentReviewTableData || currentReviewTableData.length < 2) return alert("No data to download!");
+      let csvContent = currentReviewTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.setAttribute("href", URL.createObjectURL(blob));
+      link.setAttribute("download", `review_results_${new Date().getTime()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+
+    let currentAnalysisTableData = [];
+    let currentHlsTableData = [];
+
+    function switchReqTab(tabName) {
+      const anTab = document.getElementById('req-analysis-content-tab');
+      const scTab = document.getElementById('req-scenario-content-tab');
+      const anBtn = document.getElementById('tab-req-analysis');
+      const scBtn = document.getElementById('tab-req-scenario');
+      const inputSection = document.getElementById('req-input-section');
+
+      if (tabName === 'analysis') {
+        anTab.style.display = 'block';
+        scTab.style.display = 'none';
+        inputSection.style.display = 'block';
+        anBtn.style.color = '#fff';
+        anBtn.style.borderBottomColor = '#3b82f6';
+        scBtn.style.color = '#94a3b8';
+        scBtn.style.borderBottomColor = 'transparent';
+      } else {
+        anTab.style.display = 'none';
+        scTab.style.display = 'block';
+        inputSection.style.display = 'none';
+        scBtn.style.color = '#fff';
+        scBtn.style.borderBottomColor = '#3b82f6';
+        anBtn.style.color = '#94a3b8';
+        anBtn.style.borderBottomColor = 'transparent';
+      }
+    }
+
+    let reqJiraIssueResults = [];
+
+    async function searchReqUserStories() {
+      const projectSelect = document.getElementById('req-jira-project-select');
+      const selectedProject = projectSelect.value;
+      const q = document.getElementById('req-jira-issue-search').value.trim();
+      const resultsDiv = document.getElementById('req-jira-issue-results');
+      const selectedDiv = document.getElementById('req-jira-selected-issue');
+
+      selectedDiv.style.display = 'none';
+      selectedDiv.textContent = '';
+
+      if (!selectedProject) {
+        alert('\u26a0\ufe0f Please select a Jira project first');
+        return;
+      }
+
+      resultsDiv.innerHTML = '\u23f3 Searching...';
+
+      try {
+        const url = `/jira/issues?projectKey=${encodeURIComponent(selectedProject)}${q ? '&q=' + encodeURIComponent(q) : ''}`;
+        const response = await fetch(url, { method: 'GET' });
+        const data = await response.json();
+
+        if (data.success && data.issues) {
+          reqJiraIssueResults = data.issues;
+          if (data.issues.length === 0) {
+            resultsDiv.innerHTML = '<p style="color:white; opacity:0.5;">No issues found.</p>';
+            return;
+          }
+
+          let html = '<div style="max-height:200px; overflow-y:auto; border-radius:6px;">';
+          data.issues.forEach((issue, idx) => {
+            const safeSummary = (issue.summary || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += `<div onclick="selectReqJiraIssueByIndex(${idx})" style="padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; font-size:14px; background:rgba(255,255,255,0.04);" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'"><strong style="color:#60a5fa;">${issue.key}</strong> \u2014 ${safeSummary}</div>`;
+          });
+          html += '</div>';
+          resultsDiv.innerHTML = html;
+        } else {
+          resultsDiv.innerHTML = `<p style="color:red;">Error: ${data.error || 'Failed to search'}</p>`;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = `<p style="color:red;">Network Error: ${error.message}</p>`;
+      }
+    }
+
+    function selectReqJiraIssueByIndex(index) {
+      const issue = reqJiraIssueResults[index];
+      if (!issue) return;
+
+      const key = issue.key || '';
+      const summary = issue.summary || '';
+      const description = issue.description || '';
+
+      document.getElementById('req-jira-issue-key').value = key;
+      document.getElementById('req-jira-issue-results').innerHTML = '';
+
+      const selectedDiv = document.getElementById('req-jira-selected-issue');
+      selectedDiv.textContent = '\u2705 Selected: ' + key + ' \u2014 ' + summary;
+      selectedDiv.style.display = 'block';
+
+      // Populate the requirements textarea with summary + description
+      document.getElementById('req-analysis-input').value = (summary + '\n\n' + description).trim();
+    }
+
+
+    function copyReqAnalysisTable() {
+      if (!currentAnalysisTableData || currentAnalysisTableData.length === 0) return alert("Nothing to copy!");
+      const text = currentAnalysisTableData.map(row => row.join("\t")).join("\n");
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Table copied to clipboard!");
+      }).catch(err => {
+        alert("❌ Failed to copy: " + err);
+      });
+    }
+
+    function downloadReqAnalysisCSV() {
+      if (!currentAnalysisTableData || currentAnalysisTableData.length < 2) return alert("No data to download!");
+      let csvContent = currentAnalysisTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.setAttribute("href", URL.createObjectURL(blob));
+      link.setAttribute("download", `req_analysis_${new Date().getTime()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function copyReqScenarioTable() {
+      if (!currentHlsTableData || currentHlsTableData.length === 0) return alert("Nothing to copy!");
+      const text = currentHlsTableData.map(row => row.join("\t")).join("\n");
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Table copied to clipboard!");
+      }).catch(err => {
+        alert("❌ Failed to copy: " + err);
+      });
+    }
+
+    function downloadReqScenarioCSV() {
+      if (!currentHlsTableData || currentHlsTableData.length < 2) return alert("No data to download!");
+      let csvContent = currentHlsTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.setAttribute("href", URL.createObjectURL(blob));
+      link.setAttribute("download", `req_scenario_${new Date().getTime()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+
+    // ============================================
+    // EXECUTION PAGE
+    // ============================================
+
+    // Internal state for execution rows
+    // Each entry: { id, description, steps, expected, status, video, answer }
+    let executionRows = [];
+    let execRunningAll = false;
+
+    // Status badge HTML
+    function execStatusBadge(status) {
+      const cfg = {
+        pending: { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: '— Pending' },
+        running: { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', label: '⏳ Running' },
+        passed: { color: '#10b981', bg: 'rgba(16,185,129,0.15)', label: '✅ Passed' },
+        failed: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', label: '❌ Failed' },
+        blocked: { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', label: '🚧 Blocked' },
+      };
+      const s = cfg[status] || cfg.pending;
+      return `<span style="padding:4px 12px; border-radius:20px; font-size:13px; font-weight:600;
+        color:${s.color}; background:${s.bg}; white-space:nowrap;">${s.label}</span>`;
+    }
+
+    function loadTestCasesForExecution() {
+      if (!currentTableData || currentTableData.length < 2) {
+        alert('⚠️ No test cases found. Please generate test cases on the Test Cases page first.');
+        return;
+      }
+
+      const headers = currentTableData[0];
+      const rows = currentTableData.slice(1);
+
+      // Map columns by header name (case-insensitive)
+      const idx = (name) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+      const idIdx = idx('id');
+      const descIdx = idx('description') !== -1 ? idx('description') : idx('name') !== -1 ? idx('name') : 1;
+      const stepIdx = idx('step');
+      const expIdx = idx('expected');
+
+      executionRows = rows.map((row, i) => ({
+        id: row[idIdx] || `TC-${i + 1}`,
+        description: row[descIdx] || '',
+        steps: row[stepIdx] || '',
+        expected: row[expIdx] || '',
+        status: 'pending',
+        video: null,
+        answer: '',
+      }));
+
+      renderExecutionTable();
+      updateExecStats();
+
+      document.getElementById('exec-run-all-btn').disabled = false;
+      document.getElementById('exec-empty-hint').style.display = 'none';
+
+      // Show stats bar
+      const statsRow = document.getElementById('exec-stats-row');
+      statsRow.style.display = 'grid';
+    }
+
+    function renderExecutionTable() {
+      const wrap = document.getElementById('exec-table-wrap');
+      if (!executionRows.length) {
+        wrap.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:40px;"><p>No test cases loaded</p></div>';
+        return;
+      }
+
+      let html = `<table style="width:100%; min-width:900px;">
+        <thead><tr>
+          <th style="width:50px;">#</th>
+          <th>ID</th>
+          <th>Description</th>
+          <th>Steps</th>
+          <th>Expected Result</th>
+          <th style="width:130px; text-align:center;">Status</th>
+          <th style="width:110px; text-align:center;">Run</th>
+          <th style="width:90px; text-align:center;">Video</th>
+        </tr></thead><tbody>`;
+
+      executionRows.forEach((row, i) => {
+        const desc = (row.description || '').substring(0, 120).replace(/</g, '&lt;');
+        const steps = (row.steps || '').substring(0, 100).replace(/</g, '&lt;');
+        const exp = (row.expected || '').substring(0, 100).replace(/</g, '&lt;');
+
+        const videoBtn = row.video
+          ? `<button class="btn-blue" onclick="openExecVideo('${row.video}','${(row.id || '').replace(/'/g, '')}')"
+               style="padding:5px 12px; font-size:12px;">🎬 Watch</button>`
+          : `<span style="color:#475569; font-size:12px;">—</span>`;
+
+        const runDisabled = (row.status === 'running') ? 'disabled' : '';
+
+        html += `<tr id="exec-row-${i}" data-exec-index="${i}">
+          <td style="color:#64748b; font-size:13px;">${i + 1}</td>
+          <td style="font-weight:600; color:#60a5fa; font-size:13px;">${(row.id || '').replace(/</g, '&lt;')}</td>
+          <td style="font-size:13px; max-width:200px;">${desc}${row.description && row.description.length > 120 ? '…' : ''}</td>
+          <td style="font-size:12px; color:#94a3b8; max-width:180px;">${steps}${row.steps && row.steps.length > 100 ? '…' : ''}</td>
+          <td style="font-size:12px; color:#94a3b8; max-width:180px;">${exp}${row.expected && row.expected.length > 100 ? '…' : ''}</td>
+          <td id="exec-status-${i}" style="text-align:center;">${execStatusBadge(row.status)}</td>
+          <td style="text-align:center;">
+            <button id="exec-run-btn-${i}" class="btn-blue" ${runDisabled}
+              onclick="executeTestCase(${i})"
+              style="padding:6px 14px; font-size:13px;">▶ Run</button>
+          </td>
+          <td id="exec-video-${i}" style="text-align:center;">${videoBtn}</td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    }
+
+    async function executeTestCase(rowIndex) {
+      const row = executionRows[rowIndex];
+      if (!row) return;
+
+      // Mark as running
+      row.status = 'running';
+      row.video = null;
+      const statusCell = document.getElementById(`exec-status-${rowIndex}`);
+      const runBtn = document.getElementById(`exec-run-btn-${rowIndex}`);
+      const videoCell = document.getElementById(`exec-video-${rowIndex}`);
+
+      if (statusCell) statusCell.innerHTML = execStatusBadge('running');
+      if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳'; }
+      if (videoCell) videoCell.innerHTML = '<span style="color:#475569;font-size:12px;">—</span>';
+
+      const prompt = `You are an AI test automation agent. Execute the following test case using browser tools.
+
+Test Case ID: ${row.id}
+Description: ${row.description}
+Steps to Execute:
+${row.steps}
+Expected Result: ${row.expected}
+
+After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a brief reason.`;
+
+      try {
+        const response = await fetch('/execute_mistral', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        if (!response.ok) throw new Error(`Server error ${response.status}`);
+        const data = await response.json();
+
+        const answer = (data.answer || '').toUpperCase();
+        let status = 'failed';
+        if (answer.includes('PASSED')) status = 'passed';
+        else if (answer.includes('BLOCKED')) status = 'blocked';
+
+        // Extract video path
+        let videoPath = null;
+        if (data.video) {
+          // data.video is like "/tmp/agent_YYYYMMDD_HHMMSS.mp4"
+          const filename = data.video.replace(/^\/tmp\//, '');
+          videoPath = `/video/${filename}`;
+        }
+
+        row.status = status;
+        row.video = videoPath;
+        row.answer = data.answer || '';
+
+        // Update DOM
+        if (statusCell) statusCell.innerHTML = execStatusBadge(status);
+        if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run'; }
+        if (videoCell) {
+          if (videoPath && (status === 'failed' || status === 'blocked')) {
+            const safeId = (row.id || '').replace(/'/g, '');
+            videoCell.innerHTML = `<button class="btn-blue" onclick="openExecVideo('${videoPath}','${safeId}')"
+              style="padding:5px 12px; font-size:12px;">🎬 Watch</button>`;
+          } else {
+            videoCell.innerHTML = '<span style="color:#475569;font-size:12px;">—</span>';
+          }
+        }
+
+      } catch (err) {
+        row.status = 'failed';
+        row.answer = 'Error: ' + err.message;
+        if (statusCell) statusCell.innerHTML = execStatusBadge('failed');
+        if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run'; }
+      }
+
+      updateExecStats();
+    }
+
+    async function runAllTestCases() {
+      if (!executionRows.length) {
+        alert('⚠️ No test cases loaded. Click "Load Test Cases" first.');
+        return;
+      }
+      if (execRunningAll) return;
+      execRunningAll = true;
+
+      const runAllBtn = document.getElementById('exec-run-all-btn');
+      const loadBtn = document.getElementById('exec-load-btn');
+      const progressWrap = document.getElementById('exec-progress-wrap');
+      const progressBar = document.getElementById('exec-progress-bar');
+      const progressLabel = document.getElementById('exec-progress-label');
+
+      runAllBtn.disabled = true;
+      runAllBtn.textContent = '⏳ Running…';
+      if (loadBtn) loadBtn.disabled = true;
+      progressWrap.style.display = 'block';
+
+      const total = executionRows.length;
+      let completed = 0;
+
+      for (let i = 0; i < total; i++) {
+        progressLabel.textContent = `${completed} / ${total} completed`;
+        progressBar.style.width = `${Math.round((completed / total) * 100)}%`;
+
+        await executeTestCase(i);
+        completed++;
+        progressLabel.textContent = `${completed} / ${total} completed`;
+        progressBar.style.width = `${Math.round((completed / total) * 100)}%`;
+      }
+
+      // Done
+      execRunningAll = false;
+      runAllBtn.disabled = false;
+      runAllBtn.textContent = '▶ Run All';
+      if (loadBtn) loadBtn.disabled = false;
+
+      setTimeout(() => { progressWrap.style.display = 'none'; }, 3000);
+    }
+
+    function updateExecStats() {
+      const total = executionRows.length;
+      const passed = executionRows.filter(r => r.status === 'passed').length;
+      const failed = executionRows.filter(r => r.status === 'failed').length;
+      const blocked = executionRows.filter(r => r.status === 'blocked').length;
+
+      document.getElementById('exec-stat-total').textContent = total;
+      document.getElementById('exec-stat-passed').textContent = passed;
+      document.getElementById('exec-stat-failed').textContent = failed;
+      document.getElementById('exec-stat-blocked').textContent = blocked;
+    }
+
+    function openExecVideo(path, label) {
+      const modal = document.getElementById('exec-video-modal');
+      const player = document.getElementById('exec-video-player');
+      const lbl = document.getElementById('exec-video-label');
+      modal.style.display = 'flex';
+      player.src = path;
+      player.load();
+      lbl.textContent = `Recording for: ${label}  |  ${path}`;
+    }
+
+    function closeExecVideoModal() {
+      const modal = document.getElementById('exec-video-modal');
+      const player = document.getElementById('exec-video-player');
+      modal.style.display = 'none';
+      player.pause();
+      player.src = '';
+    }
+
+    // Close video modal on backdrop click
+    document.getElementById('exec-video-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeExecVideoModal();
+    });
 
   </script>
 
 </body>
+
 </html>
