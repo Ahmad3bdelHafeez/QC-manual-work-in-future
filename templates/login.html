@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartQA - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      /* Animated vibrant gradient background */
+      background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #1e3a8a);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #fff;
+    }
+
+    @keyframes gradientBG {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .blob_1,
+    .blob_2 {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      opacity: 0.6;
+      animation: float 10s ease-in-out infinite;
+    }
+
+    .blob_1 {
+      width: 400px;
+      height: 400px;
+      background: #8b5cf6;
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+
+    .blob_2 {
+      width: 300px;
+      height: 300px;
+      background: #3b82f6;
+      bottom: -100px;
+      right: -100px;
+      animation-delay: -5s;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+
+      50% {
+        transform: translateY(-20px) scale(1.05);
+      }
+    }
+
+    .login-container {
+      position: relative;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 48px;
+      width: 100%;
+      max-width: 440px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+      transform: translateY(0);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .login-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .login-header h1 {
+      font-size: 36px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(to right, #60a5fa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .login-header p {
+      color: #cbd5e1;
+      font-size: 16px;
+      font-weight: 300;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #e2e8f0;
+      font-weight: 500;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      font-size: 15px;
+      color: #fff;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .form-group input::placeholder {
+      color: #64748b;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #60a5fa;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+    }
+
+    .form-group input:focus+label,
+    .form-group input:focus~label {
+      color: #60a5fa;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn-login:hover::before {
+      left: 100%;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.5);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
+      box-shadow: 0 5px 10px -5px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .error-message.show {
+      display: flex;
+    }
+
+    .info-text {
+      text-align: center;
+      margin-top: 32px;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 300;
+    }
+
+    .helper-link {
+      color: #93c5fd;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s, text-shadow 0.2s;
+    }
+
+    .helper-link:hover {
+      color: #bfdbfe;
+      text-shadow: 0 0 8px rgba(191, 219, 254, 0.5);
+    }
+
+    /* Custom icon for error message */
+    .error-icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      background-color: currentColor;
+      mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>') center/cover;
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>') center/cover;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="blob_1"></div>
+  <div class="blob_2"></div>
+
+  <div class="login-container">
+    <div class="login-header">
+      <h1><span style="font-size: 40px; text-shadow: 0 0 20px rgba(255,255,255,0.3);">🚀</span> SmartQA</h1>
+      <p>Next Generation Testing Platform</p>
+    </div>
+
+    <div id="error-message" class="error-message">
+      <div class="error-icon"></div>
+      <span id="error-text"></span>
+    </div>
+
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="jira-url">Jira URL</label>
+        <input type="url" id="jira-url" name="jira-url" required placeholder="https://your-domain.atlassian.net"
+          value="https://qeemascrum.atlassian.net">
+      </div>
+
+      <div class="form-group">
+        <label for="jira-email">Jira Email / Username</label>
+        <input type="email" id="jira-email" name="jira-email" required autocomplete="username"
+          placeholder="name@company.com">
+      </div>
+
+      <div class="form-group">
+        <label for="jira-api-token">Jira API Token</label>
+        <input type="password" id="jira-api-token" name="jira-api-token" required autocomplete="current-password"
+          placeholder="•••••••••••••••••••••">
+        <div style="margin-top: 10px; font-size: 13px; color: #94a3b8; text-align: right;">
+          <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" class="helper-link">Get
+            API Token &rarr;</a>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" id="login-btn">Sign in to workspace</button>
+    </form>
+
+    <div class="info-text">
+      Securely connected to your Jira instance
+    </div>
+  </div>
+
+  <script>
+    async function handleLogin(event) {
+      event.preventDefault();
+
+      const jiraUrl = document.getElementById('jira-url').value.trim();
+      const jiraEmail = document.getElementById('jira-email').value.trim();
+      const jiraApiToken = document.getElementById('jira-api-token').value.trim();
+      const errorDiv = document.getElementById('error-message');
+      const errorText = document.getElementById('error-text');
+      const loginBtn = document.getElementById('login-btn');
+
+      if (!jiraUrl || !jiraEmail || !jiraApiToken) {
+        showError('Please enter Jira URL, email, and API token');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = 'Connecting to Jira <span style="display:inline-block; animation: pulse 1.5s infinite">...</span>';
+      errorDiv.classList.remove('show');
+
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            jira_url: jiraUrl,
+            jira_email: jiraEmail,
+            jira_api_token: jiraApiToken
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to home page
+          window.location.href = '/';
+        } else {
+          showError(data.error || 'Login failed. Please check your Jira credentials.');
+        }
+      } catch (error) {
+        showError('Network error. Please try again.');
+        console.error('Login error:', error);
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign in to workspace';
+      }
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error-message');
+      const errorText = document.getElementById('error-text');
+      errorText.textContent = message;
+      errorDiv.classList.add('show');
+    }
+
+    // Pulse animation for loading text
+    document.head.insertAdjacentHTML('beforeend', '<style>@keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }</style>');
+
+    // Check if already logged in
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const response = await fetch('/check-auth');
+        const data = await response.json();
+        if (data.authenticated) {
+          window.location.href = '/';
+        }
+      } catch (error) {
+        // Not logged in, stay on login page
+      }
+    });
+  </script>
+</body>
+
+</html>
