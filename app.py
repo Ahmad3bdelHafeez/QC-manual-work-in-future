@@ -1924,6 +1924,262 @@ def search_xray_tests():
         logger.error(f"Error searching Xray tests: {str(e)}")
         return jsonify({"success": False, "error": f"Search failed: {str(e)}"}), 500
 
+@app.route('/xray/test-sets', methods=['GET'])
+def get_xray_test_sets():
+    """Fetch all Test Sets for a project from Jira with auto-discovery of issue type name"""
+    try:
+        jira_config = get_user_jira_config()
+        if not jira_config:
+            return jsonify({"success": False, "error": "Jira configuration required"}), 400
+            
+        project_key = request.args.get('projectKey')
+        if not project_key:
+            return jsonify({"success": False, "error": "Project Key is required"}), 400
+            
+        # 1. Discover the "Test Set" issue type name for this project
+        test_set_type_name = "Test Set" # Default
+        try:
+            success_it, issue_types, err_it = get_project_issue_types(jira_config, project_key)
+            if success_it and issue_types:
+                # Look for names containing "Test Set"
+                found_type = next((it for it in issue_types if "test set" in (it.get('name') or "").lower()), None)
+                if found_type:
+                    test_set_type_name = found_type['name']
+                    logger.info(f"Auto-discovered Test Set issue type name: '{test_set_type_name}'")
+                else:
+                    names = [it.get('name') for it in issue_types]
+                    logger.warning(f"Could not find exact 'Test Set' issue type. Available: {names}")
+            else:
+                logger.warning(f"Failed to fetch issue types for discovery: {err_it}")
+        except Exception as e:
+            logger.error(f"Error during issue type discovery: {str(e)}")
+
+        # 2. Search for issues of discovered type
+        search_url = f"{jira_config['url'].rstrip('/')}/rest/api/3/search/jql"
+        auth = (jira_config['email'], jira_config['api_token'])
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        
+        jql = f'project = "{project_key}" AND issuetype = "{test_set_type_name}" ORDER BY created DESC'
+        logger.info(f"Fetching test sets with JQL: {jql}")
+        
+        payload = {
+            "jql": jql,
+            "maxResults": 500,
+            "fields": ["summary", "key"]
+        }
+        payload = json.dumps( {
+            "expand": "names",
+            "fields":["*all"],
+            "fieldsByKeys": True,
+            "jql": jql,
+            "maxResults": 500
+        } )
+        
+        resp = requests.post(search_url, data=payload, headers=headers, auth=auth, timeout=30)
+        
+        if resp.status_code == 200:
+            issues = resp.json().get('issues', [])
+            test_sets = [{
+                'key': issue['key'],
+                'summary': issue['fields']['summary']
+            } for issue in issues]
+            return jsonify({"success": True, "test_sets": test_sets})
+        else:
+            error_data = resp.text
+            try:
+                error_json = resp.json()
+                if 'errorMessages' in error_json and error_json['errorMessages']:
+                    error_data = " ".join(error_json['errorMessages'])
+            except:
+                pass
+            
+            # If specifically an issue type error, provide more context
+            if "issuetype" in error_data.lower() or "issue type" in error_data.lower():
+                error_data += f" (Note: Tried searching for issue type '{test_set_type_name}')"
+                
+            logger.error(f"Jira API error ({resp.status_code}): {error_data}")
+            return jsonify({"success": False, "error": f"Jira Error ({resp.status_code}): {error_data}"}), 500
+            
+    except Exception as e:
+        logger.error(f"Exception fetching test sets: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/xray/test-set-tests', methods=['POST'])
+def get_test_set_tests():
+    """Fetch all test cases belonging to selected Test Sets"""
+    try:
+        data = request.json
+        test_set_keys = data.get('test_set_keys', [])
+        
+        if not test_set_keys:
+            return jsonify({"success": False, "error": "No Test Set keys provided"}), 400
+            
+        auth_token = get_xray_auth_token()
+        if not auth_token:
+            return jsonify({"success": False, "error": "Failed to authenticate with Xray"}), 500
+            
+        headers = {
+            "Authorization": f"Bearer {auth_token}",
+            "Content-Type": "application/json"
+        }
+        
+        all_test_keys = set()
+        test_steps_map = {} # Map key -> {steps_text, expected_text}
+        test_to_set_map = {} # Map test_key -> test_set_key
+        
+        if test_set_keys:
+            # Xray Cloud's getTestSet expects a numerical issueId. 
+            # To fetch by Key (like AHC-1535), we use getTestSets with a JQL filter.
+            gql_url = f"{XRAY_CLOUD_BASE_URL}/api/v2/graphql"
+            
+            # Escape keys for JQL
+            keys_str = ", ".join([f"\"{k}\"" for k in test_set_keys])
+            jql = f"key in ({keys_str})"
+            
+            query = """
+            query getTestsFromSets($jql: String!) {
+              getTestSets(jql: $jql, limit: 100) {
+                results {
+                  jira(fields: ["key"])
+                  tests(limit: 100) {
+                    results {
+                      jira(fields: ["key"])
+                      steps {
+                        action
+                        result
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """
+            variables = {"jql": jql}
+            
+            logger.info(f"Calling Xray GraphQL API with JQL: {jql}")
+            try:
+                resp = requests.post(gql_url, headers=headers, json={"query": query, "variables": variables}, timeout=30)
+                
+                if resp.status_code == 200:
+                    result = resp.json()
+                    if 'errors' in result:
+                        logger.error(f"GraphQL errors: {result['errors']}")
+                        return jsonify({"success": False, "error": "Xray GraphQL Error"}), 500
+                        
+                    data = result.get('data', {})
+                    test_sets = data.get('getTestSets', {}).get('results', [])
+                    
+                    for ts in test_sets:
+                        ts_key = ts.get('jira', {}).get('key')
+                        test_results = ts.get('tests', {}).get('results', [])
+                        for r in test_results:
+                            t_key = r.get('jira', {}).get('key')
+                            if not t_key: continue
+                            
+                            all_test_keys.add(t_key)
+                            if t_key not in test_to_set_map:
+                                test_to_set_map[t_key] = ts_key
+                            
+                            # Process steps
+                            steps = r.get('steps', [])
+                            if steps:
+                                actions = []
+                                results = []
+                                for idx, s in enumerate(steps):
+                                    actions.append(f"{idx+1}. {s.get('action', '')}")
+                                    results.append(f"{idx+1}. {s.get('result', '')}")
+                                
+                                test_steps_map[t_key] = {
+                                    'steps_text': "\n".join(actions),
+                                    'expected_text': "\n".join(results)
+                                }
+                else:
+                    logger.error(f"Xray GraphQL error (Status {resp.status_code}): {resp.text}")
+                    return jsonify({"success": False, "error": f"Xray API Error ({resp.status_code})"}), 500
+            except Exception as e:
+                logger.error(f"Exception during Xray GraphQL call: {str(e)}")
+                return jsonify({"success": False, "error": str(e)}), 500
+
+        if not all_test_keys:
+            logger.info("No test keys identified for the selected Test Sets.")
+            return jsonify({"success": True, "tests": [], "count": 0})
+            
+        logger.info(f"Identifying details for {len(all_test_keys)} unique test keys from Jira")
+            
+        # Fetch details for all unique test keys from Jira
+        jira_config = get_user_jira_config()
+        if not jira_config:
+            return jsonify({"success": False, "error": "Jira configuration required"}), 400
+            
+        base_url = jira_config['url'].rstrip('/')
+        auth = (jira_config['email'], jira_config['api_token'])
+        jira_headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        
+        # Singular 'issue' is the correct endpoint for Jira Cloud bulkfetch
+        bulk_url = f"{base_url}/rest/api/3/issue/bulkfetch"
+        bulk_payload = {
+            "issueIdsOrKeys": list(all_test_keys),
+            "fields": ["summary", "description", "status", "issuelinks"]
+        }
+        
+        logger.info(f"Calling Jira Bulk Fetch: {bulk_url}")
+        bulk_resp = requests.post(bulk_url, json=bulk_payload, headers=jira_headers, auth=auth, timeout=30)
+        
+        if bulk_resp.status_code != 200:
+            logger.error(f"Jira bulk fetch failed (Status {bulk_resp.status_code}): {bulk_resp.text}")
+            return jsonify({"success": False, "error": f"Jira bulk fetch failed ({bulk_resp.status_code})"}), 500
+
+        tests_details = []
+        issues = bulk_resp.json().get('issues', [])
+        logger.info(f"Successfully fetched {len(issues)} issues from Jira")
+
+        for issue in issues:
+            fields = issue.get('fields', {})
+            key = issue['key']
+            
+            # Extract description and convert from ADF if necessary
+            desc_val = fields.get('description')
+            text_desc = adf_to_text(desc_val) if desc_val else ""
+            
+            # Get steps and expected result from our GraphQL map
+            steps_info = test_steps_map.get(key, {})
+            steps_text = steps_info.get('steps_text', "")
+            expected_text = steps_info.get('expected_text', "See Jira for details")
+
+            # Extract User Story (Requirement) from issuelinks
+            user_story_key = None
+            for link in fields.get('issuelinks', []):
+                # Look for inwardIssue or outwardIssue that looks like a story/req
+                linked_issue = link.get('inwardIssue') or link.get('outwardIssue')
+                if linked_issue:
+                    link_name = link.get('type', {}).get('name', '').lower()
+                    # Common names: "Tests", "Tested by", "Relates", etc.
+                    # We often want the one that is NOT a test set
+                    if 'test' in link_name or 'cover' in link_name:
+                        user_story_key = linked_issue.get('key')
+                        break
+
+            tests_details.append({
+                'key': key,
+                'summary': fields.get('summary'),
+                'description': text_desc,
+                'steps': steps_text,
+                'expected': expected_text,
+                'test_set': test_to_set_map.get(key),
+                'user_story': user_story_key
+            })
+        
+        return jsonify({
+            "success": True, 
+            "tests": tests_details, 
+            "count": len(tests_details),
+            "jira_url": base_url
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching tests for sets: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/xray/import-tests', methods=['POST'])
 def import_tests_to_xray():
     """Import test cases to Xray Cloud using bulk API"""
