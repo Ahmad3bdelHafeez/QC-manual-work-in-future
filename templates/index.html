@@ -1129,8 +1129,9 @@
                   <th>Summary</th>
                   <th>Steps</th>
                   <th>Expected Result</th>
+                  <th>Actual Result</th>
                   <th style="width:180px; text-align:center;">Status</th>
-                  <th style="width:120px; text-align:center;">Actions</th>
+                  <th style="width:150px; text-align:center;">Actions</th>
                 </tr>
               </thead>
               <tbody id="cocycle-table-body">
@@ -2307,6 +2308,15 @@
             msg += `\n⚠️ Linking error: ${linkingError}`;
           }
 
+          // Callback to CoCycle if needed
+          if (currentCycleBugIndex !== null && data.result?.issues && data.result.issues.length > 0) {
+            const newBugKey = data.result.issues[0].key;
+            coCycleTests[currentCycleBugIndex].jiraBugId = newBugKey;
+            currentCycleBugIndex = null; // reset
+            renderCoCycleTable();
+            msg += `\n\n✅ Linked bug ${newBugKey} to your current test cycle.`;
+          }
+
           alert(msg);
         } else {
           alert("❌ Error uploading to Jira: " + data.error);
@@ -3122,6 +3132,7 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
     let coCycleTests = [];
     let coCycleName = "";
     let coCycleJiraUrl = "";
+    let currentCycleBugIndex = null;
 
     async function loadCoCycleTestSets() {
       const projectKey = document.getElementById('cocycle-project-select').value;
@@ -3207,7 +3218,9 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
           coCycleJiraUrl = data.jira_url || "";
           coCycleTests = data.tests.map(t => ({
             ...t,
-            status: 'pending'
+            status: 'pending',
+            actualResult: '',
+            jiraBugId: ''
           }));
 
           document.getElementById('cocycle-setup-card').style.display = 'none';
@@ -3240,6 +3253,8 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
       coCycleTests.forEach((test, i) => {
         const tr = document.createElement('tr');
         const jiraLink = coCycleJiraUrl ? `${coCycleJiraUrl.replace(/\/$/, '')}/browse/${test.key}` : '#';
+        const bugLink = test.jiraBugId && coCycleJiraUrl ? `<a href="${coCycleJiraUrl.replace(/\/$/, '')}/browse/${test.jiraBugId}" target="_blank" style="color:#ef4444; font-weight:700; text-decoration:none;">🐞 ${test.jiraBugId}</a>` : (test.jiraBugId || '—');
+
         tr.innerHTML = `
           <td>${i + 1}</td>
           <td style="font-weight:600;">
@@ -3250,13 +3265,31 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
           <td style="font-size:14px;">${test.summary}</td>
           <td style="font-size:12px; color:#64748b; white-space:pre-wrap;">${test.steps || '—'}</td>
           <td style="font-size:12px; color:#64748b; white-space:pre-wrap;">${test.expected || '—'}</td>
-          <td style="text-align:center;">${execStatusBadge(test.status)}</td>
+          <td style="padding:10px;">
+            <div id="actual-result-container-${i}" style="display: ${test.status === 'failed' || test.status === 'blocked' || test.actualResult ? 'block' : 'none'}; animation: fadeIn 0.3s ease;">
+              <textarea 
+                id="actual-result-${i}"
+                oninput="saveActualResult(${i}, this.value)" 
+                placeholder="Explain the issue..."
+                style="width:100%; min-height:80px; background:rgba(255,255,255,0.03); border:1px solid ${test.status === 'failed' ? '#ef4444' : 'rgba(255,255,255,0.1)'}; border-radius:10px; color:#fff; font-size:13px; padding:12px; resize:vertical; font-family:inherit; transition: all 0.2s ease; outline:none;"
+                onfocus="this.style.border='1px solid #3b82f6'; this.style.background='rgba(59,130,246,0.05)';"
+                onblur="this.style.border='1px solid ${test.status === 'failed' ? '#ef4444' : 'rgba(255,255,255,0.1)'}'; this.style.background='rgba(255,255,255,0.03)';"
+              >${test.actualResult || ''}</textarea>
+            </div>
+            ${!(test.status === 'failed' || test.status === 'blocked' || test.actualResult) ? `<div style="text-align:center; color:#64748b; font-size:11px; font-style:italic;">—</div>` : ''}
+          </td>
+          <td style="text-align:center;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              ${execStatusBadge(test.status)}
+              ${bugLink !== '—' ? `<div style="margin-top:4px;">${bugLink}</div>` : ''}
+            </div>
+          </td>
           <td style="text-align:center;">
             <div style="display:flex; justify-content:center; gap:6px;">
               <button onclick="updateCoCycleStatus(${i}, 'passed')" class="btn-blue" style="background:#10b981; padding:6px 10px; font-size:12px;" title="Pass">✅</button>
               <button onclick="updateCoCycleStatus(${i}, 'failed')" class="btn-blue" style="background:#ef4444; padding:6px 10px; font-size:12px;" title="Fail">❌</button>
               <button onclick="updateCoCycleStatus(${i}, 'blocked')" class="btn-blue" style="background:#f59e0b; padding:6px 10px; font-size:12px;" title="Block">🚧</button>
-              ${test.status === 'failed' ? `<button onclick="reportBugFromCycle(${i})" class="btn-blue" style="background:#475569; padding:6px 10px; font-size:12px;" title="Report Bug">🐞</button>` : ''}
+              <button onclick="reportBugFromCycle(${i})" class="btn-blue" style="background:#475569; padding:6px 10px; font-size:12px;" title="Report Bug">🐞</button>
             </div>
           </td>
         `;
@@ -3264,10 +3297,29 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
       });
     }
 
+    function saveActualResult(index, value) {
+      coCycleTests[index].actualResult = value;
+    }
+
     function updateCoCycleStatus(index, status) {
       coCycleTests[index].status = status;
       renderCoCycleTable();
       updateCoCycleProgress();
+
+      // If failed, focus the actual result textarea
+      if (status === 'failed') {
+        setTimeout(() => {
+          const textarea = document.getElementById(`actual-result-${index}`);
+          if (textarea) {
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            textarea.focus();
+            if (!textarea.value) {
+              textarea.placeholder = "⚠️ PLEASE EXPLAIN THE FAILURE HERE...";
+              textarea.style.border = '1px solid #ef4444';
+            }
+          }
+        }, 100);
+      }
     }
 
     function updateCoCycleProgress() {
@@ -3407,6 +3459,7 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
         const linkHtml = jiraBase ? `<a href="${jiraBase}/browse/${t.key}" target="_blank" style="color:#2563eb; text-decoration:none; font-weight:700;">${t.key}</a>` : `<strong>${t.key}</strong>`;
         const testSetHtml = t.test_set && jiraBase ? `<a href="${jiraBase}/browse/${t.test_set}" target="_blank" style="color:#64748b; text-decoration:none; font-size:12px;">${t.test_set}</a>` : `<span style="color:#94a3b8; font-size:12px;">${t.test_set || '—'}</span>`;
         const userStoryHtml = t.user_story && jiraBase ? `<a href="${jiraBase}/browse/${t.user_story}" target="_blank" style="color:#3b82f6; text-decoration:none; font-weight:600; font-size:12px;">${t.user_story}</a>` : `<span style="color:#94a3b8; font-size:12px;">—</span>`;
+        const bugHtml = t.jiraBugId && jiraBase ? `<a href="${jiraBase}/browse/${t.jiraBugId}" target="_blank" style="color:#ef4444; text-decoration:none; font-weight:700; font-size:12px;">🐞 ${t.jiraBugId}</a>` : `<span style="color:#94a3b8; font-size:12px;">—</span>`;
 
         tableRows += `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -3423,8 +3476,12 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
                     </td>
                     <td style="padding:16px; font-size:12px; color:#64748b; white-space:pre-wrap;">${t.steps || '—'}</td>
                     <td style="padding:16px; font-size:12px; color:#64748b; white-space:pre-wrap;">${t.expected || '—'}</td>
+                    <td style="padding:16px; font-size:12px; color:#1e293b; white-space:pre-wrap; background:rgba(0,0,0,0.02);">${t.actualResult || '—'}</td>
                     <td style="padding:16px; text-align:center;">
-                        <span style="background:${statusColor}; color:#fff; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:700; text-transform:uppercase;">${t.status}</span>
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                          <span style="background:${statusColor}; color:#fff; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:700; text-transform:uppercase;">${t.status}</span>
+                          ${t.jiraBugId ? `<div>${bugHtml}</div>` : ''}
+                        </div>
                     </td>
                 </tr>
             `;
@@ -3492,6 +3549,7 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
                     <th>Test & Requirement</th>
                     <th>Execution Steps</th>
                     <th>Expected Result</th>
+                    <th>Actual Result</th>
                     <th style="text-align:center; width:120px;">Status</th>
                 </tr>
             </thead>
@@ -3521,14 +3579,44 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
       const test = coCycleTests[index];
       if (!test) return;
 
+      // Validation: Must have actual result
+      if (!test.actualResult || test.actualResult.trim() === '') {
+        alert(`⚠️ Action Required!\n\nPlease enter the ACTUAL RESULT for test ${test.key} before reporting a bug so developers know what went wrong.`);
+        const textarea = document.getElementById(`actual-result-${index}`);
+        if (textarea) {
+          textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          textarea.focus();
+          textarea.style.border = '1px solid #ef4444';
+        }
+        return;
+      }
+
       if (confirm(`Report Jira bug for failed test: ${test.key}?`)) {
+        currentCycleBugIndex = index;
         // Pre-fill bug reporter tab
         const bugInput = document.getElementById('bugreport-input');
         const cycleProjectSelect = document.getElementById('cocycle-project-select');
         const bugProjectSelect = document.getElementById('bug-jira-project-select');
+        const bugIssueKeyInput = document.getElementById('bug-jira-issue-key');
 
         if (bugInput) {
-          bugInput.value = `Test Case Failed: ${test.key}\nSummary: ${test.summary}\nExpected: ${test.expected || 'Not specified'}\nActual: Test failed during execution cycle "${coCycleName}".`;
+          bugInput.value = `Test Case Failed: ${test.key}\nSummary: ${test.summary}\nExpected: ${test.expected || 'Not specified'}\nActual: ${test.actualResult}\n\nExecution Cycle: "${coCycleName}"`;
+        }
+
+        // Link to User Story if available, else Test Case
+        if (bugIssueKeyInput) {
+          const linkTarget = test.user_story || test.key;
+          bugIssueKeyInput.value = linkTarget;
+          
+          // Trigger search/display if needed
+          const selectedIssueDiv = document.getElementById('bug-jira-selected-issue');
+          if (selectedIssueDiv) {
+            selectedIssueDiv.style.display = 'block';
+            selectedIssueDiv.innerHTML = `<strong>Linked to ${test.user_story ? 'Story' : 'Test'}:</strong> ${linkTarget}`;
+            selectedIssueDiv.style.borderColor = '#3b82f6';
+            selectedIssueDiv.style.background = 'rgba(59,130,246,0.1)';
+            selectedIssueDiv.style.color = '#1e3a8a';
+          }
         }
 
         // Sync project selector
@@ -3537,9 +3625,6 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
         }
 
         showPage('bug-reporter');
-
-        // Optionally trigger generation automatically
-        // generateBugReport();
       }
     }
 
