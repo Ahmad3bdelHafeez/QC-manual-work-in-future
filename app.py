@@ -2921,6 +2921,37 @@ def check_auth():
         "username": session.get('username')
     })
 
+@app.route('/get-figma-pages', methods=['POST'])
+def Get_figma_pages():
+    data = request.json
+    figma_url = data.get('figma_url')
+    logger.info("Figma URL: ", figma_url)
+
+    if not figma_url:
+        return jsonify({"error": "figma_url is required"}), 400
+
+    CLIENT_ID = "dU5kF1d2G24SXypznOQofJ"
+    CLIENT_SECRET = "fCpY3G95AVXCCJJZRoHMS6D8SI6COJ"
+    REDIRECT_URI = "/callback"
+    CODE = "CODE_FROM_REDIRECT"
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    token_url = "https://www.figma.com/api/oauth/token"
+    data = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "redirect_uri": REDIRECT_URI,
+        "code": CODE,
+        "grant_type": "authorization_code"
+    }
+
+    resp = requests.post(token_url, data=data, headers=headers)
+    token_info = resp.json()
+    ACCESS_TOKEN = token_info["access_token"]
+
+    logger.info("Token Generated: ", ACCESS_TOKEN)
+    return jsonify({"message": "Token Generated", "output": ACCESS_TOKEN})
+
+
 # Serve home page (protected)
 @app.route("/", methods=["GET"])
 def home():
@@ -2949,4 +2980,4 @@ if __name__ == "__main__":
         logger.warning(f"Template file not found: {template_path}")
         logger.warning("Please make sure the test_plan_template.docx file exists in the templates directory")
     
-    app.run(debug=True, port=8084)
+    app.run(debug=False, port=8084)
