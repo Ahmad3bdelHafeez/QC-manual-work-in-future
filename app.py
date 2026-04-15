@@ -2,7 +2,7 @@ import os
 import re
 import logging
 import uuid
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote
 from flask import Flask, request, jsonify, render_template, session, redirect
 from docx import Document
 from docx.shared import Pt
@@ -36,6 +36,8 @@ import imageio
 import numpy as np
 from mcp import ClientSession
 from mcp.client.sse import sse_client
+import pandas as pd
+
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -44,7 +46,10 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Random secret key for session security
+# Use a stable secret key to persist sessions across restarts
+app.secret_key = os.getenv('SECRET_KEY', 'smart-qa-platform-super-secret-key-12345')
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = False # Set to True in production with HTTPS
 CORS(app)  # allow all origins
 
 # Configuration
@@ -54,6 +59,7 @@ XRAY_CLIENT_ID = os.getenv('XRAY_CLIENT_ID', '3DD691D61824422AAFC685BF28345BB1')
 XRAY_CLIENT_SECRET = os.getenv('XRAY_CLIENT_SECRET', '67db40a621521094896a0b5839b917d27d461f5ab6b34b7b02041b87c2008896')
 MCB_SERVER_URL = os.getenv('MCB_SERVER_URL', 'http://localhost:5678')
 MOCK_MCB = os.getenv('MOCK_MCB', 'false').lower() == 'true'
+
 
 PLAYWRIGHT_RUNS = {}
 
@@ -73,6 +79,11 @@ MAX_TOOL_RESULT_CHARS = 3000
 VIDEO_DIR = "tmp"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
+# Figma OAuth Configuration
+FIGMA_CLIENT_ID = os.getenv('FIGMA_CLIENT_ID', 'JnmzWuEpo8leaFjBuNijvi')
+FIGMA_CLIENT_SECRET = os.getenv('FIGMA_CLIENT_SECRET', 'sbOTWwQccDNrCz3L7sVcI8LQQvFWwP')
+FIGMA_REDIRECT_URI = os.getenv('FIGMA_REDIRECT_URI', 'https://api-mg.onrender.com/callback')
+
 
 def mistral_call_with_retry(client, **kwargs):
     """Call Mistral with exponential backoff on rate limit errors."""
@@ -87,6 +98,48 @@ def mistral_call_with_retry(client, **kwargs):
             else:
                 raise
     raise RuntimeError("Mistral rate limit exceeded after retries.")
+
+
+
+def figma_api_request(url, headers, method="GET", json_data=None):
+    """Call Figma API silently with exponential backoff and Retry-After support."""
+    for attempt in range(10):
+        try:
+            # Adding a browser-like User-Agent to avoid automated scraping detection
+            headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+            
+            if method == "GET":
+                resp = requests.get(url, headers=headers)
+            else:
+                resp = requests.post(url, headers=headers, json=json_data)
+                
+            if resp.status_code == 429:
+                # Check for Retry-After header (could be seconds)
+                retry_after = resp.headers.get("Retry-After")
+                if retry_after and retry_after.isdigit():
+                    wait = int(retry_after)
+                    if wait > 60:
+                        logger.error(f"Figma applied a long-term block ({wait}s). Stopping retry to prevent hang.")
+                        return resp # Fail immediately if wait is > 1 min
+                    logger.warning(f"Figma Rate Limit (429) - Respecting Retry-After: Waiting {wait}s...")
+                else:
+                    wait = (2 ** attempt) + 2
+                
+                # Final safety cap for the sleep
+                time.sleep(min(wait, 30))
+                continue
+                
+            if resp.status_code == 403:
+                # Check if it is a token revocation
+                if "Invalid token" in resp.text:
+                    logger.error("Figma Token Revoked (403). Session must be refreshed.")
+                
+            return resp
+        except Exception as e:
+            logger.error(f"Figma Request Exception: {str(e)}")
+            time.sleep(2)
+    
+    return resp
 
 
 async def take_screenshot(session, step_num):
@@ -1598,6 +1651,44 @@ def import_bugs_to_xray():
         logger.error(f"Error in import_bugs_to_jira: {str(e)}")
         return jsonify({"success": False, "error": f"Internal server error: {str(e)}"}), 500
 
+@app.route('/upload-test-cases', methods=['POST'])
+def upload_test_cases():
+    """Upload test cases from Excel or CSV file"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"success": False, "error": "No file part"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"success": False, "error": "No selected file"}), 400
+        
+        filename = file.filename.lower()
+        if filename.endswith('.csv'):
+            df = pd.read_csv(file)
+        elif filename.endswith('.xlsx') or filename.endswith('.xls'):
+            df = pd.read_excel(file)
+        else:
+            return jsonify({"success": False, "error": "Unsupported file format. Please upload CSV or Excel."}), 400
+        
+        # Replace NaN with empty string
+        df = df.fillna('')
+        
+        # Convert to list of lists (headers + rows)
+        headers = df.columns.tolist()
+        rows = df.values.tolist()
+        
+        table_data = [headers] + rows
+        
+        return jsonify({
+            "success": True,
+            "table_data": table_data,
+            "message": f"Successfully uploaded {len(rows)} test cases from {file.filename}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error uploading test cases: {str(e)}")
+        return jsonify({"success": False, "error": f"Error parsing file: {str(e)}"}), 500
+
 # Jira Configuration Endpoints
 @app.route('/jira/test-connection', methods=['POST'])
 def test_jira_connection_endpoint():
@@ -2913,6 +3004,89 @@ def logout():
     logger.info("User logged out")
     return jsonify({"success": True, "message": "Logged out successfully"})
 
+# --- Figma OAuth Routes ---
+@app.route('/figma/login')
+def figma_login():
+    """Redirect to Figma's OAuth authorization page"""
+    state = str(uuid.uuid4())
+    session['figma_oauth_state'] = state
+    auth_url = (
+        f"https://www.figma.com/oauth?client_id={FIGMA_CLIENT_ID}"
+        f"&redirect_uri={FIGMA_REDIRECT_URI}&scope=file_content:read%20file_metadata:read"
+        f"&state={state}&response_type=code"
+    )
+    return redirect(auth_url)
+
+@app.route('/callback')
+def figma_callback():
+    """Handle the OAuth callback from Figma"""
+    code = request.args.get('code')
+    state = request.args.get('state')
+    saved_state = session.get('figma_oauth_state')
+    
+    logger.info(f"Figma Callback - Received state: {state}, Saved state: {saved_state}")
+    
+    if not state or state != saved_state:
+        logger.error(f"OAuth State Mismatch. Received: {state}, Expected: {saved_state}")
+        return f"Invalid OAuth state. Expected: {saved_state}, Received: {state}. Please try again.", 400
+        
+    # Use api.figma.com which is the standard REST API endpoint
+    token_url = "https://api.figma.com/v1/oauth/token"
+    auth_data = {
+        "redirect_uri": FIGMA_REDIRECT_URI,
+        "code": code,
+        "grant_type": "authorization_code",
+        "client_id": FIGMA_CLIENT_ID,
+        "client_secret": FIGMA_CLIENT_SECRET
+    }
+    
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    
+    try:
+        # Debug Log: Exactly what we are sending
+        logger.debug(f"TOKEN_URL: {token_url}")
+        logger.debug(f"AUTH_DATA: {auth_data}")
+        logger.debug(f"REDIRECT_URI in code: |{FIGMA_REDIRECT_URI}|")
+        
+        # Using auth=(id, secret) handles the Basic Auth header automatically
+        resp = requests.post(
+            token_url, 
+            data=auth_data, 
+            headers=headers, 
+            auth=(FIGMA_CLIENT_ID.strip(), FIGMA_CLIENT_SECRET.strip())
+        )
+        
+        logger.info(f"Figma exchange response: {resp.status_code}")
+        logger.info(f"Response Headers: {dict(resp.headers)}")
+        logger.info(f"Response Body: {resp.text}")
+        
+        if not resp.ok:
+            return f"Authentication failed: {resp.status_code} - {resp.text}. URL: {token_url}", resp.status_code
+            
+    except Exception as e:
+        logger.error(f"Request exception: {str(e)}")
+        return f"Request failed: {str(e)}", 500
+        
+    token_info = resp.json()
+    session['figma_access_token'] = token_info.get('access_token')
+    
+    # Redirect back to the main page (or a success page)
+    # We use a simple script to close the popup if used, otherwise redirect
+    return "<script>window.opener.postMessage('figma-success', '*'); window.close();</script>"
+
+@app.route('/figma/status')
+def figma_status():
+    """Check if the user is authenticated with Figma"""
+    return jsonify({
+        "authenticated": 'figma_access_token' in session
+    })
+
+@app.route('/figma/logout')
+def figma_token_logout():
+    """Remove Figma token from session"""
+    session.pop('figma_access_token', None)
+    return jsonify({"success": True})
+
 @app.route("/check-auth", methods=["GET"])
 def check_auth():
     """Check if user is authenticated"""
@@ -2921,38 +3095,234 @@ def check_auth():
         "username": session.get('username')
     })
 
+def extract_figma_file_key(url):
+    """
+    Extract file key from figma URL. Handles:
+    - figma.com/file/:key/...
+    - figma.com/design/:key/...
+    - figma.com/proto/:key/...
+    """
+    match = re.search(r'figma\.com/(?:file|design|proto)/([a-zA-Z0-9]+)', url)
+    return match.group(1) if match else None
+
 @app.route('/get-figma-pages', methods=['POST'])
 def Get_figma_pages():
     data = request.json
     figma_url = data.get('figma_url')
-    logger.info("Figma URL: ", figma_url)
+    access_token = session.get('figma_access_token')
+    
+    logger.info(f"Fetching Figma pages for URL: {figma_url}")
 
     if not figma_url:
         return jsonify({"error": "figma_url is required"}), 400
 
-    CLIENT_ID = "dU5kF1d2G24SXypznOQofJ"
-    CLIENT_SECRET = "fCpY3G95AVXCCJJZRoHMS6D8SI6COJ"
-    REDIRECT_URI = "/callback"
-    CODE = "CODE_FROM_REDIRECT"
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    token_url = "https://www.figma.com/api/oauth/token"
-    data = {
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "redirect_uri": REDIRECT_URI,
-        "code": CODE,
-        "grant_type": "authorization_code"
-    }
+    if not access_token:
+        logger.warning("Fetch requested but figma_access_token not in session.")
+        return jsonify({"error": "Please connect to Figma first."}), 401
 
-    resp = requests.post(token_url, data=data, headers=headers)
-    token_info = resp.json()
-    ACCESS_TOKEN = token_info["access_token"]
+    file_key = extract_figma_file_key(figma_url)
+    if not file_key:
+        logger.error(f"Could not extract file key from URL: {figma_url}")
+        return jsonify({"error": "Invalid Figma URL. Could not extract file key."}), 400
 
-    logger.info("Token Generated: ", ACCESS_TOKEN)
-    return jsonify({"message": "Token Generated", "output": ACCESS_TOKEN})
+    try:
+        headers = {"Authorization": f"Bearer {access_token}"}
+        
+        # 1. Simple, direct fetch of the file structure
+        resp = figma_api_request(f"https://api.figma.com/v1/files/{file_key}", headers)
+        if not resp.ok:
+            logger.error(f"Figma Error Details ({resp.status_code}): {resp.text}")
+            if resp.status_code == 403:
+                return jsonify({"error": "Figma Access Denied (403). Please click 'Connect Figma' again to refresh your session."}), 403
+            return jsonify({"error": f"Figma fetch failed: {resp.status_code}"}), resp.status_code
+        
+        file_data = resp.json()
+        document = file_data.get('document', {})
+        children = document.get('children', [])
+        
+        def collect_frames_recursive(node, screens_list):
+            """Recursively find all FRAME, INSTANCE, and COMPONENT nodes."""
+            if node.get('type') in ['FRAME', 'INSTANCE', 'COMPONENT']:
+                screen_obj = {"id": node.get('id'), "name": node.get('name'), "thumbnail": None}
+                screens_list.append(screen_obj)
+            for child in node.get('children', []):
+                collect_frames_recursive(child, screens_list)
 
+        pages_with_screens = []
+        for canvas in children:
+            if canvas.get('type') == 'CANVAS':
+                page_screens = []
+                collect_frames_recursive(canvas, page_screens)
+                if page_screens:
+                    pages_with_screens.append({"id": canvas.get('id'), "name": canvas.get('name'), "screens": page_screens})
+        
+        return jsonify({"success": True, "pages": pages_with_screens})
+    except Exception as e:
+        logger.error(f"Figma API error: {str(e)}")
+        return jsonify({"error": f"Figma API error: {str(e)}"}), 500
 
-# Serve home page (protected)
+@app.route('/co-usability/analyze', methods=['POST'])
+def analyze_usability():
+    data = request.json
+    figma_url = data.get('figma_url')
+    access_token = data.get('access_token') or session.get('figma_access_token')
+    selected_pages = data.get('pages', []) # List of {id, name}
+    factors = data.get('factors', []) # List of strings
+
+    if not figma_url or not access_token or not selected_pages:
+        return jsonify({"success": False, "error": "Missing required parameters"}), 400
+
+    file_key = extract_figma_file_key(figma_url)
+    if not file_key:
+        return jsonify({"success": False, "error": "Invalid Figma URL"}), 400
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    try:
+        # 1. Fetch Image URLs for all selected screens using Figma Image API
+        screen_ids = [s['id'] for s in selected_pages]
+        all_ids = ",".join([quote(sid) for sid in screen_ids])
+        # Switched to format=jpg as requested
+        image_api_url = f"https://api.figma.com/v1/images/{file_key}?ids={all_ids}&format=png&scale=0.1"
+        
+        # Using silent retry helper
+        image_resp = figma_api_request(image_api_url, headers)
+        if not image_resp.ok:
+            logger.error(f"Figma Image API failed: {image_resp.status_code} - {image_resp.text}")
+            return jsonify({"success": False, "error": f"Failed to fetch screen images: {image_resp.status_code}"}), image_resp.status_code
+            
+        images_data = image_resp.json().get('images', {})
+        
+        # 2. Build the visual context for the prompt
+        image_contents = []
+        for screen in selected_pages:
+            sid = screen['id']
+            sname = screen['name']
+            surl = images_data.get(sid)
+            if surl:
+                image_contents.append({
+                    "type": "image_url",
+                    "image_url": surl
+                })
+                image_contents.append({
+                    "type": "text",
+                    "text": f"Screen Name: {sname}"
+                })
+
+        # Detailed Checklist Mapping for relevant factors
+        CHECKLIST_DETAILS = {
+            "Navigation and Functionality": [
+                ("N001", "Clear Menus", "Ensure menus and navigation bars are easy to find, consistent, and clearly labeled."),
+                ("N002", "Search Functionality", "Verify search bar is available, functional, and returns relevant results."),
+                ("N003", "Execution of Functions", "Confirm all functions can be executed through the GUI."),
+                ("N004", "Text-only Navigation", "Check if users can navigate using text only."),
+                ("N005", "Keyboard Navigation", "Ensure interactive elements are keyboard accessible."),
+                ("N006", "Tabbing Consistency", "Verify uniform and consistent tabbing between elements."),
+                ("N007", "Back Button Functionality", "Ensure back button works without undesired redirection.")
+            ],
+            "Content and Layout": [
+                ("C001", "Readable Text", "Ensure fonts are readable, appropriately sized, aligned, and wrap correctly."),
+                ("C002", "Consistent Layout", "Confirm layout is consistent, clear, and intuitive across pages."),
+                ("C003", "Aesthetic and Accessible Colors", "Check for standard, visually pleasing colors and distraction-free backgrounds."),
+                ("C004", "Headings and Subheadings", "Verify content organization with aligned headings."),
+                ("C005", "Spelling and Terminology", "Ensure no spelling mistakes and understandable terminology."),
+                ("C006", "Page Design", "Ensure design looks good on various resolutions.")
+            ],
+            "Forms and Inputs": [
+                ("F001", "Label Clarity", "Ensure clear, descriptive labels for all form fields."),
+                ("F002", "Error Handling and Validation", "Verify informative error messages and correct form validation."),
+                ("F003", "Input Validation", "Check that inputs are validated against expected formats.")
+            ],
+            "Visual Design and GUI Elements": [
+                ("V001", "Element Sizing and Positioning", "Ensure elements are properly sized, positioned, and aligned."),
+                ("V002", "Image Quality", "Verify images are clear, aligned, and optimized for speed."),
+                ("V003", "Consistent Buttons", "Ensure functional buttons have consistent colors and styles."),
+                ("V004", "Scrollbars", "Verify scrollbars appear and function correctly.")
+            ],
+            "Accessibility and Responsiveness": [
+                ("A001", "Responsive Design", "Ensure UI adjusts without hiding text/controls across sizes."),
+                ("A002", "Screen Reader Compatibility", "Verify site is compatible and images have alt text."),
+                ("A003", "Zoom Features", "Validate that zoom features work correctly."),
+                ("A004", "Keyboard Navigation", "Check access via keyboard for all interactive elements.")
+            ],
+            "Performance and Feedback": [
+                ("P001", "Visual and Functional Feedback", "Ensure immediate feedback for clicks and submissions."),
+                ("P002", "Loading Indicators", "Verify presence of indicators during data processing."),
+                ("P003", "Confirmation and Toast Messages", "Check that success/error toasts appear appropriately."),
+                ("P004", "Test Across Devices", "Ensure design is functional across desktop, tablet, and mobile.")
+            ],
+            "Testing and Validation": [
+                ("T001", "User Feedback", "Collect and address potential usability issues based on design."),
+                ("T002", "Solution Map", "Verify presence and accuracy of solution maps and links."),
+                ("T003", "Link Verification", "Ensure all links are functional and not broken."),
+                ("T004", "Contact Information", "Ensure solution owner contact info is visible."),
+                ("T005", "Error Handling and Recovery", "Ensure clear error messages and guidance for recovery.")
+            ],
+            "Additional Considerations": [
+                ("X001", "Brand Consistency", "Verify adherence to branding guidelines (logo, colors, type)."),
+                ("X002", "UI Standards", "Ensure alignment with established UI/UX design standards."),
+                ("X003", "Internationalization", "Check support for languages and cultural appropriateness.")
+            ]
+        }
+
+        selected_checklist_items = []
+        for factor in factors:
+            if factor in CHECKLIST_DETAILS:
+                selected_checklist_items.extend(CHECKLIST_DETAILS[factor])
+
+        checklist_str = "\n".join([f"- [{i[0]}] {i[1]}: {i[2]}" for i in selected_checklist_items])
+
+        # 3. Construct the Vision-Based Prompt
+        system_instruction = f"""
+Act as a Senior UX/UI Expert and QA Lead. Your task is to perform a professional Usability Audit by visually analyzing the provided Figma design screens.
+
+**Checklist Categories Selected:**
+{", ".join(factors)}
+
+**Detailed Items to Evaluate:**
+{checklist_str}
+
+**RESPONSE FORMAT:**
+Generate a professional Usability Dashboard Report. Start with a Markdown Table with exactly these 5 columns:
+| Factor | Severity | Screen | Observation | Recommendation |
+
+**STRATEGIC INSIGHTS:**
+Following the table, provide 3 to 5 "Strategic UX Insights" (bullet points) summarizing the overall design direction and major wins/risks.
+
+**SEVERITY DEFINITIONS:**
+- **Critical**: Fix immediately. Blocks core UX.
+- **Major**: High friction or major accessibility gap.
+...
+**METADATA BLOCK:**
+At the very end of your response, add this exact JSON block on its own line:
+`META: {{"score": 0-100, "critical": X, "major": Y, "minor": Z, "insights": ["Insight 1", "Insight 2", ...]}}`
+"""
+        # VISION MODEL
+        VISION_MODEL = "pixtral-12b-2409"
+        
+        # Call Mistral using Pixtral Vision model
+        client = Mistral(api_key=MISTRAL_KEY)
+        response = mistral_call_with_retry(
+            client,
+            model=VISION_MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": system_instruction},
+                        *image_contents
+                    ]
+                }
+            ]
+        )
+        
+        report = response.choices[0].message.content
+        return jsonify({"success": True, "report": report})
+
+    except Exception as e:
+        logger.error(f"Usability analysis error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/", methods=["GET"])
 def home():
     """Home page - requires authentication"""
@@ -2980,4 +3350,4 @@ if __name__ == "__main__":
         logger.warning(f"Template file not found: {template_path}")
         logger.warning("Please make sure the test_plan_template.docx file exists in the templates directory")
     
-    app.run(debug=False, port=8084)
+    app.run(debug=True, host='127.0.0.1', port=8084)
