@@ -3140,21 +3140,35 @@ def Get_figma_pages():
         document = file_data.get('document', {})
         children = document.get('children', [])
         
-        def collect_frames_recursive(node, screens_list):
-            """Recursively find all FRAME, INSTANCE, and COMPONENT nodes."""
-            if node.get('type') in ['FRAME', 'INSTANCE', 'COMPONENT']:
-                screen_obj = {"id": node.get('id'), "name": node.get('name'), "thumbnail": None}
-                screens_list.append(screen_obj)
-            for child in node.get('children', []):
-                collect_frames_recursive(child, screens_list)
-
         pages_with_screens = []
         for canvas in children:
             if canvas.get('type') == 'CANVAS':
                 page_screens = []
-                collect_frames_recursive(canvas, page_screens)
+                # Only look at top-level children of the page
+                for node in canvas.get('children', []):
+                    # Direct frames/components are usually screens
+                    if node.get('type') in ['FRAME', 'COMPONENT']:
+                        page_screens.append({
+                            "id": node.get('id'),
+                            "name": node.get('name'),
+                            "thumbnail": None
+                        })
+                    # Sections are common for grouping screens
+                    elif node.get('type') == 'SECTION':
+                        for section_child in node.get('children', []):
+                            if section_child.get('type') in ['FRAME', 'COMPONENT']:
+                                page_screens.append({
+                                    "id": section_child.get('id'),
+                                    "name": f"{node.get('name')} > {section_child.get('name')}",
+                                    "thumbnail": None
+                                })
+                
                 if page_screens:
-                    pages_with_screens.append({"id": canvas.get('id'), "name": canvas.get('name'), "screens": page_screens})
+                    pages_with_screens.append({
+                        "id": canvas.get('id'),
+                        "name": canvas.get('name'),
+                        "screens": page_screens
+                    })
         
         return jsonify({"success": True, "pages": pages_with_screens})
     except Exception as e:
