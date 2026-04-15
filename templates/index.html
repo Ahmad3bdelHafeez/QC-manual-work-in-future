@@ -297,6 +297,36 @@
       filter: brightness(1.1);
     }
 
+    /* Modern Loading Bar */
+    .loading-progress {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .loading-progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+      background-size: 200% 100%;
+      animation: progress-animation 2s infinite linear, gradient-slide 2s infinite linear;
+      border-radius: 4px;
+    }
+
+    @keyframes progress-animation {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+
+    @keyframes gradient-slide {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
     table {
       border-collapse: collapse;
       width: 100%;
@@ -4274,17 +4304,24 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
     async function fetchFigmaPagesForUsability() {
       const url = document.getElementById('figma-url-input').value.trim();
       const listDiv = document.getElementById('figma-pages-list');
-
+      const fetchBtn = document.getElementById('figma-fetch-btn');
+      
       if (!url) {
         alert('⚠️ Please provide a Figma URL.');
         return;
       }
 
+      // Indicate loading
+      fetchBtn.disabled = true;
+      fetchBtn.innerHTML = '⏳ Fetching...';
+      
       listDiv.innerHTML = `
-        <div class="loading-box">
-            <div class="loading-spinner" style="margin: 0 auto;"></div>
-            <p class="loading-text">Exploring design layers...</p>
+        <div class="loading-progress">
+            <div class="loading-progress-bar"></div>
         </div>
+        <p class="loading-text" style="text-align: center; color: #94a3b8; font-size: 14px;">
+            Exploring design layers and pages...
+        </p>
       `;
 
       try {
@@ -4352,6 +4389,9 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
 
       } catch (error) {
         listDiv.innerHTML = `<div class="alert-card alert-error">❌ Connection Error: ${error.message}</div>`;
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.innerHTML = '🔍 Fetch Design Pages';
       }
     }
 
