@@ -4,7 +4,6 @@ mistralai~=1.7.0
 Flask~=2.2.2
 flask-cors~=6.0.1
 waitress~=3.0.2
-anthropic
 python-dotenv
 mcp
 reportlab
@@ -13,8 +12,9 @@ pillow
 imageio
 imageio-ffmpeg
 langchain
-langchain-anthropic
-langchain-community
 playwright
 nest_asyncio
 lxml
+numpy
+openpyxl
+pandas
