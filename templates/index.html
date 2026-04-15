@@ -440,6 +440,15 @@
       color: #fff !important;
       transform: translateY(-2px) !important;
     }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-reveal {
+      animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    }
   </style>
 </head>
 
@@ -451,17 +460,17 @@
   <div class="sidebar">
     <div class="sidebar-header">
       <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 24px;">🕵️</span> ConanQA
+        <span style="font-size: 24px;">🕵️</span> ConanAI
       </h2>
       <div style="font-size: 12px; color: #64748b; margin-top: 4px; margin-left: 38px; font-weight: 500;">AI-Powered
         Testing Suite</div>
     </div>
 
     <ul>
-      <li onclick="showPage('req-analysis')">
+      <li class="active" onclick="showPage('req-analysis')">
         <span class="sidebar-icon">📊</span> CoAnalyser
       </li>
-      <li class="active" onclick="showPage('test-plan')">
+      <li onclick="showPage('test-plan')">
         <span class="sidebar-icon">📑</span> CoPlanner
       </li>
       <li onclick="showPage('test-case')">
@@ -478,6 +487,9 @@
       </li>
       <li onclick="showPage('cocycle')">
         <span class="sidebar-icon">🔄</span> CoCycle
+      </li>
+      <li onclick="showPage('cousability')">
+        <span class="sidebar-icon">🎨</span> CoUsability
       </li>
       <li onclick="showPage('execution')">
         <span class="sidebar-icon">▶️</span> CoExecutor
@@ -512,12 +524,12 @@
       </div>
 
       <div class="modern-card">
-        <h3 class="section-title">✨ Requirements Input</h3>
+        <h3 class="section-title">✨ Specifications</h3>
         <div class="input-group">
-          <label class="form-label" for="requirements">Requirements / User Stories</label>
+          <label class="form-label" for="requirements">Phase Scope/Information</label>
           <textarea id="requirements" class="form-control" style="height: 120px; font-family: inherit;"
-            placeholder="Paste your requirements, user stories, or feature specifications here..."></textarea>
-          <div class="helper-text">Provide detailed requirements for a comprehensive test plan.</div>
+            placeholder="Paste your Phase Scope/Information here, also refer to test plan template sections..."></textarea>
+          <div class="helper-text">Provide detailed Phase Scope/Information for a comprehensive test plan.</div>
         </div>
         <div style="text-align: right;">
           <button class="btn-blue" onclick="generateTestPlan()">
@@ -526,7 +538,7 @@
         </div>
       </div>
 
-      <div class="modern-card" style="padding: 0; overflow: hidden;">
+      <div class="modern-card animate-reveal" style="padding: 0; overflow: hidden;">
         <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
           <h3 style="margin: 0; color: #334155; font-size: 18px;">📝 Generated Results</h3>
         </div>
@@ -574,6 +586,21 @@
           <div style="text-align: right;">
             <button class="btn-blue" onclick="generateTestCases()">
               ⚡ Generate Test Cases
+            </button>
+          </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="modern-card">
+          <h3 class="section-title">📂 Upload Test Cases (Excel/CSV)</h3>
+          <div class="input-group">
+            <label class="form-label" for="testcase-file">Select File (.csv, .xlsx, .xls)</label>
+            <input type="file" id="testcase-file" class="form-control" accept=".csv, .xlsx, .xls">
+            <div class="helper-text">Upload your existing test cases to view and review them.</div>
+          </div>
+          <div style="text-align: right;">
+            <button class="btn-blue" onclick="uploadTestCases()">
+              📤 Upload & View
             </button>
           </div>
         </div>
@@ -644,7 +671,7 @@
         </div>
 
         <!-- Results -->
-        <div class="modern-card" style="padding: 0; overflow: hidden;">
+        <div class="modern-card animate-reveal" style="padding: 0; overflow: hidden;">
           <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: transparent;">
             <h3 style="margin: 0; color: #fff; font-size: 18px;">📝 Generated Results</h3>
           </div>
@@ -760,7 +787,7 @@
 
       <div id="req-analysis-content-tab">
         <!-- Analysis Results -->
-        <div class="modern-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+        <div class="modern-card animate-reveal" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
           <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: transparent;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <h3 style="margin: 0; color: #fff; font-size: 18px;">📝 Analysis Results</h3>
@@ -781,7 +808,7 @@
 
       <div id="req-scenario-content-tab" style="display:none;">
         <!-- Scenarios Results -->
-        <div class="modern-card" style="padding: 0; overflow: hidden;">
+        <div class="modern-card animate-reveal" style="padding: 0; overflow: hidden;">
           <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: transparent;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <h3 style="margin: 0; color: #fff; font-size: 18px;">📝 High Level Scenarios</h3>
@@ -876,7 +903,7 @@
         <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
           <h3 style="margin: 0; color: #334155; font-size: 18px;">📝 Generated Results</h3>
         </div>
-        <div id="bugreport-result" style="overflow-x:auto; padding: 20px;">
+        <div id="bugreport-result" class="animate-reveal" style="overflow-x:auto; padding: 20px;">
           <div style="text-align: center; color: #9ca3af; padding: 40px;">
             <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🐞</div>
             <p>Your generated bug report will appear here</p>
@@ -921,7 +948,7 @@
         <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
           <h3 style="margin: 0; color: #334155; font-size: 18px;">📝 Generated Results</h3>
         </div>
-        <div id="datagenerator-result" style="overflow-x:auto; padding: 20px;">
+        <div id="datagenerator-result" class="animate-reveal" style="overflow-x:auto; padding: 20px;">
           <div style="text-align: center; color: #9ca3af; padding: 40px;">
             <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🎲</div>
             <p>Your generated data will appear here</p>
@@ -1141,6 +1168,510 @@
         </div>
       </div>
     </div>
+
+    <!-- ===================== -->
+    <!-- CoUsability Page      -->
+    <!-- ===================== -->
+    <div id="cousability" class="page" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h1 style="margin:0; font-size: 28px; color: #fff; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 32px;">🎨</span> CoUsability
+        </h1>
+      </div>
+
+      <div class="modern-card">
+        <h3 class="section-title">🔗 Connect Figma Design</h3>
+        <div class="input-row">
+          <div class="input-col" style="flex: 1;">
+            <label class="form-label" for="figma-url-input">Figma Project URL</label>
+            <input type="text" id="figma-url-input" class="form-control" placeholder="https://www.figma.com/design/Y8Sh.../Project-Name">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+          <div id="figma-auth-status" style="font-size: 14px; color: #94a3b8;">
+            Checking Figma connection...
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button id="figma-connect-btn" class="btn-orange" onclick="loginWithFigma()">
+              🦊 Connect Figma
+            </button>
+            <button id="figma-fetch-btn" class="btn-blue" onclick="fetchFigmaPagesForUsability()" style="display:none;">
+              🔍 Fetch Design Pages
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis Controls -->
+      <div id="cousability-controls" style="display:none;">
+        <div class="modern-card">
+          <h3 class="section-title">⚖️ Analysis Parameters</h3>
+          <div class="input-group">
+            <label class="form-label">Heuristic Checks Factors</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Navigation and Functionality" checked> 1. Navigation and Functionality
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Content and Layout" checked> 2. Content and Layout
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Forms and Inputs" checked> 3. Forms and Inputs
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Visual Design and GUI Elements" checked> 4. Visual Design and GUI Elements
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Accessibility and Responsiveness" checked> 5. Accessibility and Responsiveness
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Performance and Feedback" checked> 6. Performance and Feedback
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Testing and Validation" checked> 7. Testing and Validation
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                  <input type="checkbox" class="usability-check" value="Additional Considerations" checked> 8. Additional Considerations
+                </label>
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <label class="form-label">Select Screens to Test</label>
+            <div id="figma-pages-list" style="max-height: 500px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <!-- Pages will be listed here -->
+                <p style="color: #64748b; font-size: 14px;">Fetch pages first...</p>
+            </div>
+          </div>
+
+          <div style="text-align: right;">
+            <button class="btn-green" id="run-usability-btn" onclick="runUsabilityAnalysis()" disabled>
+              🚀 Run Usability Test
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CoUsability Execution & Report Card -->
+      <div id="cousability-result-card" class="modern-card animate-reveal" style="display:none; padding: 0; overflow: hidden; margin-top: 25px;">
+        <div class="result-card-header">
+            <div class="result-title">
+                <i class="fas fa-chart-pie" style="color: #60a5fa;"></i>
+                <span>Usability Audit Report</span>
+            </div>
+            <div class="result-actions">
+                <button class="btn-glass blue" onclick="copyUsabilityReport()">📋 Copy Report</button>
+                <button class="btn-glass orange" onclick="downloadUsabilityCSV()">📥 Export CSV</button>
+            </div>
+        </div>
+        <div id="cousability-report-content" style="padding: 24px; line-height: 1.6; color: #e2e8f0; overflow-x: auto;">
+          <!-- Findings render here -->
+        </div>
+      </div>
+
+      <style>
+          /* Premium Screen List Modernization */
+            .screen-list-header {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                margin-top: 15px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+            .screen-search {
+                flex: 1;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding: 10px 15px;
+                color: #fff;
+                font-size: 14px;
+                outline: none;
+                min-width: 250px;
+            }
+            .screen-search:focus {
+                border-color: var(--accent-blue);
+                background: rgba(255, 255, 255, 0.08);
+            }
+            .screen-bulk-actions {
+                display: flex;
+                gap: 8px;
+            }
+            .btn-bulk {
+                padding: 8px 12px;
+                font-size: 12px;
+                border-radius: 6px;
+                background: rgba(255,255,255,0.05);
+                color: #94a3b8;
+                border: 1px solid rgba(255,255,255,0.1);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .btn-bulk:hover {
+                background: rgba(255,255,255,0.1);
+                color: #fff;
+            }
+
+            .screen-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 15px;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                cursor: pointer;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                margin-bottom: 8px;
+            }
+
+            .screen-item:hover {
+                transform: translateX(4px);
+                background: rgba(255, 255, 255, 0.08);
+                border-color: var(--accent-blue);
+            }
+
+            .screen-item.selected {
+                background: rgba(0, 122, 255, 0.1);
+                border-color: var(--accent-blue);
+                box-shadow: 0 0 15px rgba(0, 122, 255, 0.15);
+            }
+
+            .screen-icon {
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(59, 130, 246, 0.15);
+                color: #3b82f6;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+
+            .screen-name {
+                flex: 1;
+                font-size: 14px;
+                font-weight: 500;
+                color: #e2e8f0;
+            }
+
+            /* "Design Combined" Audit Dashboard Styles */
+            .audit-dashboard {
+                display: flex;
+                flex-direction: column;
+                gap: 25px;
+            }
+
+            .audit-summary-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 15px;
+            }
+
+            .summary-stat-card {
+                padding: 20px;
+                border-radius: 16px;
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.08);
+                text-align: center;
+            }
+
+            .stat-value {
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 5px;
+            }
+
+            .stat-label {
+                font-size: 12px;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+            }
+
+            .audit-findings-list {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .finding-card {
+                padding: 24px;
+                border-radius: 16px;
+                background: rgba(30, 41, 59, 0.4);
+                border-left: 5px solid transparent;
+                border-top: 1px solid rgba(255,255,255,0.08);
+                border-right: 1px solid rgba(255,255,255,0.08);
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+
+            .finding-card.severity-critical { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+            .finding-card.severity-major { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
+            .finding-card.severity-minor { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
+
+            .finding-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 15px;
+            }
+
+            .severity-badge {
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+
+            .severity-critical .severity-badge { background: #ef4444; color: #fff; }
+            .severity-major .severity-badge { background: #f59e0b; color: #fff; }
+            .severity-minor .severity-badge { background: #3b82f6; color: #fff; }
+
+            .finding-screen { font-size: 12px; color: #94a3b8; font-weight: 600; }
+            .finding-factor { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+            .finding-desc { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 15px; }
+
+            .recommendation-box {
+                padding: 12px 15px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 10px;
+                border: 1px dashed rgba(255, 255, 255, 0.15);
+                display: flex;
+                gap: 12px;
+            }
+
+            .recommend-icon { font-size: 1.2rem; }
+            .recommend-text { font-size: 13px; color: #e2e8f0; }
+            .recommend-label { font-weight: 700; color: var(--accent-blue); margin-right: 5px; }
+
+          #cousability-report-content table {
+            width: 100%;
+            min-width: 1500px;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+          }
+          #cousability-report-content th, #cousability-report-content td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+          }
+            /* Integrated Action Bar Styles */
+            .result-card-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 24px;
+                background: rgba(255, 255, 255, 0.03);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .result-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-weight: 700;
+                color: #fff;
+                font-size: 16px;
+            }
+            .result-actions {
+                display: flex;
+                gap: 10px;
+            }
+
+            .btn-glass {
+                padding: 8px 16px;
+                font-size: 13px;
+                font-weight: 500;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                font-family: inherit;
+            }
+            .btn-glass.blue {
+                background: rgba(59, 130, 246, 0.1);
+                color: #60a5fa;
+            }
+            .btn-glass.blue:hover {
+                background: rgba(59, 130, 246, 0.2);
+                border-color: #3b82f6;
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            }
+            .btn-glass.orange {
+                background: rgba(245, 158, 11, 0.1);
+                color: #fbbf24;
+            }
+            .btn-glass.orange:hover {
+                background: rgba(245, 158, 11, 0.2);
+                border-color: #f59e0b;
+                box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+            }
+
+            /* Report Findings Content Styles */
+            .insight-box {
+                background: rgba(59, 130, 246, 0.08);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                border-radius: 16px;
+                padding: 24px;
+                margin: 24px;
+            }
+            .insight-title {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 700;
+                color: #58a6ff;
+                margin-bottom: 12px;
+                font-size: 16px;
+            }
+            .insight-list {
+                padding-left: 20px;
+                list-style: disc;
+                color: #cbd5e1;
+                font-size: 14px;
+                line-height: 1.7;
+            }
+            .insight-list li { margin-bottom: 8px; }
+
+            .audit-table-wrapper {
+                margin: 24px;
+                border-radius: 16px;
+                overflow-x: auto;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(15, 23, 42, 0.4);
+            }
+            .audit-data-table {
+                width: 100%;
+                min-width: 1200px;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            .audit-data-table th {
+                background: rgba(255, 255, 255, 0.05);
+                text-align: left;
+                padding: 18px 15px;
+                font-weight: 600;
+                color: #94a3b8;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+            .audit-data-table td {
+                padding: 20px 15px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+                vertical-align: top;
+                color: #cbd5e1;
+            }
+            .audit-data-table tr:hover {
+                background: rgba(255, 255, 255, 0.02);
+            }
+            .severity-chip {
+                padding: 5px 12px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 800;
+                display: inline-block;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .sev-critical { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+            .sev-major { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+            .sev-minor { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+            .rec-text-highlight { color: #10b981; font-weight: 800; font-size: 11px; margin-right: 4px; }
+            /* Layout Utilities for Figma Selection */
+            .page-container {
+                margin-bottom: 2rem;
+                padding-bottom: 1.5rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .page-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 1rem;
+            }
+            .page-title-box {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .page-name-text {
+                color: #58a6ff;
+                font-weight: 700;
+                font-size: 14px;
+            }
+            .page-badge {
+                font-size: 10px;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 2px 8px;
+                border-radius: 10px;
+                color: rgba(255, 255, 255, 0.4);
+            }
+            .btn-toggle-page {
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.3);
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                transition: color 0.2s;
+                font-family: inherit;
+            }
+            .btn-toggle-page:hover {
+                color: rgba(255, 255, 255, 0.6);
+            }
+
+            .screen-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 12px;
+            }
+
+            .alert-card {
+                padding: 1.5rem;
+                border-radius: 12px;
+                margin-bottom: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .alert-error {
+                background: rgba(239, 68, 68, 0.08);
+                border: 1px solid rgba(239, 68, 68, 0.2);
+                color: #fca5a5;
+            }
+            .alert-warning {
+                background: rgba(245, 158, 11, 0.08);
+                border: 1px solid rgba(245, 158, 11, 0.2);
+                color: #fcd34d;
+            }
+
+            .loading-box {
+                text-align: center;
+                padding: 40px;
+            }
+            .loading-text {
+                color: rgba(255, 255, 255, 0.6);
+                margin-top: 15px;
+                font-size: 14px;
+            }
+
+            #figma-pages-list {
+                max-height: 600px;
+                overflow-y: auto;
+                padding-right: 10px;
+            }
+            #figma-pages-list::-webkit-scrollbar { width: 5px; }
+            #figma-pages-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+      </style>
     <div id="exec-video-modal"
       style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
       <div
@@ -1202,6 +1733,14 @@
         if (currentTableData && currentTableData.length > 1) {
           loadTestCasesForExecution();
         }
+      } else if (pageId === 'cocycle') {
+        const cocycleProjectSelect = document.getElementById('cocycle-project-select');
+        if (cocycleProjectSelect && cocycleProjectSelect.options.length <= 1) {
+          // Auto-load projects if not already loaded
+          loadJiraProjectsForSelect('cocycle-project-select');
+        }
+      } else if (pageId === 'cousability') {
+        checkFigmaAuthStatus();
       }
     }
 
@@ -1790,6 +2329,77 @@
       }
     }
 
+    async function uploadTestCases() {
+      const fileInput = document.getElementById("testcase-file");
+      const resultDiv = document.getElementById("testcase-result");
+      const actionsDiv = document.getElementById("testcase-actions");
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert("⚠️ Please select a file to upload.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+
+      resultDiv.innerHTML = `<p style="color:#fff;">⏳ Uploading and parsing file...</p>`;
+      actionsDiv.style.display = "none";
+
+      try {
+        const response = await fetch("/upload-test-cases", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        const data = await response.json();
+
+        if (data.success) {
+          currentTableData = data.table_data;
+          const { htmlTable } = markdownTableToHTMLFromData(currentTableData, 'testcase');
+          resultDiv.innerHTML = htmlTable;
+          actionsDiv.style.display = "block";
+          alert("✅ " + data.message);
+        } else {
+          resultDiv.innerHTML = `<p style="color:red;">❌ Error: ${data.error}</p>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Error: ${error.message}</p>`;
+      }
+    }
+
+    function markdownTableToHTMLFromData(tableData, tableType) {
+      if (!tableData || tableData.length === 0) {
+        return { htmlTable: "<p>No data found</p>" };
+      }
+
+      const headers = tableData[0];
+      const rows = tableData.slice(1);
+
+      let table = `<table style='width:100%;'>`;
+      table += "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "<th>Actions</th></tr></thead>";
+      table += "<tbody>";
+
+      rows.forEach((row, rowIndex) => {
+        table += "<tr data-row-index='" + rowIndex + "'>";
+        row.forEach((cell, cellIndex) => {
+          if (cellIndex < headers.length) {
+            table += `<td class='editable-cell' data-row='${rowIndex}' data-col='${cellIndex}'>${cell}</td>`;
+          }
+        });
+        table += `<td class='action-buttons'>
+                    <button class='btn-green' onclick='editRow(${rowIndex}, "${tableType}")'>Edit</button>
+                    <button class='btn-red' onclick='deleteRow(${rowIndex}, "${tableType}")'>Delete</button>
+                    ${tableType === 'testcase' ? `<button class='btn-blue' onclick='openChatForTestCase(${rowIndex})'>💬 Ask AI</button>` : ''}
+                  </td>`;
+        table += "</tr>";
+      });
+
+      table += "</tbody></table>";
+      return { htmlTable: table };
+    }
+
     function markdownTableToHTML(markdown, tableType) {
       const lines = markdown.trim().split("\n").filter(line => {
         const trimmed = line.trim();
@@ -1821,28 +2431,9 @@
         .filter(row => !row.every(cell => /^:?-{2,}:?$/.test(cell)))
         .filter(row => row.length >= headers.length);
 
-      let table = `<table style='width:100%;'>`;
-      table += "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "<th>Actions</th></tr></thead>";
-      table += "<tbody>";
+      const { htmlTable } = markdownTableToHTMLFromData([headers, ...rows], tableType);
 
-      rows.forEach((row, rowIndex) => {
-        table += "<tr data-row-index='" + rowIndex + "'>";
-        row.forEach((cell, cellIndex) => {
-          if (cellIndex < headers.length) {
-            table += `<td class='editable-cell' data-row='${rowIndex}' data-col='${cellIndex}'>${cell}</td>`;
-          }
-        });
-        table += `<td class='action-buttons'>
-                    <button class='btn-green' onclick='editRow(${rowIndex}, "${tableType}")'>Edit</button>
-                    <button class='btn-red' onclick='deleteRow(${rowIndex}, "${tableType}")'>Delete</button>
-                    ${tableType === 'testcase' ? `<button class='btn-blue' onclick='openChatForTestCase(${rowIndex})'>💬 Ask AI</button>` : ''}
-                  </td>`;
-        table += "</tr>";
-      });
-
-      table += "</tbody></table>";
-
-      return { htmlTable: table, tableData: [headers, ...rows] };
+      return { htmlTable: htmlTable, tableData: [headers, ...rows] };
     }
 
     function getTableContainer(tableType) {
@@ -3607,7 +4198,7 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
         if (bugIssueKeyInput) {
           const linkTarget = test.user_story || test.key;
           bugIssueKeyInput.value = linkTarget;
-          
+
           // Trigger search/display if needed
           const selectedIssueDiv = document.getElementById('bug-jira-selected-issue');
           if (selectedIssueDiv) {
@@ -3628,27 +4219,486 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
       }
     }
 
-    // Update project name display when project is selected
-    const origShowPage = window.showPage;
-    window.showPage = function (pageId) {
-      if (typeof origShowPage === 'function') {
-        origShowPage(pageId);
-      } else {
-        // Fallback if showPage is not yet defined elsewhere
-        document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-        const target = document.getElementById(pageId);
-        if (target) target.style.display = 'block';
-        document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+
+
+    // ===============================
+    // CoUsability Functions
+    // ===============================
+
+
+    // ===============================
+    // Figma OAuth Logic
+    // ===============================
+    async function checkFigmaAuthStatus() {
+      const statusEl = document.getElementById('figma-auth-status');
+      const connectBtn = document.getElementById('figma-connect-btn');
+      const fetchBtn = document.getElementById('figma-fetch-btn');
+      
+      try {
+        const response = await fetch('/figma/status');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+          statusEl.innerHTML = '<span style="color: #10b981;">✅ Connected to Figma</span>';
+          connectBtn.style.display = 'none';
+          fetchBtn.style.display = 'inline-block';
+        } else {
+          statusEl.innerHTML = '<span style="color: #94a3b8;">⚪ Not connected</span>';
+          connectBtn.style.display = 'inline-block';
+          fetchBtn.style.display = 'none';
+        }
+      } catch (e) {
+        statusEl.textContent = 'Auth error';
+      }
+    }
+
+    function loginWithFigma() {
+        // Open OAuth login in a popup
+        const width = 600, height = 700;
+        const left = (window.innerWidth / 2) - (width / 2);
+        const top = (window.innerHeight / 2) - (height / 2);
+        
+        window.open('/figma/login', 'FigmaLogin', `width=${width},height=${height},top=${top},left=${left}`);
+    }
+
+    // Listen for message from callback popup
+    window.addEventListener('message', (event) => {
+        if (event.data === 'figma-success') {
+            checkFigmaAuthStatus();
+        }
+    });
+
+    // ===============================
+    // CoUsability Functions
+    // ===============================
+    async function fetchFigmaPagesForUsability() {
+      const url = document.getElementById('figma-url-input').value.trim();
+      const listDiv = document.getElementById('figma-pages-list');
+
+      if (!url) {
+        alert('⚠️ Please provide a Figma URL.');
+        return;
       }
 
-      if (pageId === 'cocycle') {
-        const cocycleProjectSelect = document.getElementById('cocycle-project-select');
-        if (cocycleProjectSelect && cocycleProjectSelect.options.length <= 1) {
-          // Auto-load projects if not already loaded
-          loadJiraProjectsForSelect('cocycle-project-select');
+      listDiv.innerHTML = `
+        <div class="loading-box">
+            <div class="loading-spinner" style="margin: 0 auto;"></div>
+            <p class="loading-text">Exploring design layers...</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch('/get-figma-pages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ figma_url: url })
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          listDiv.innerHTML = `
+            <div class="alert-card alert-error">
+                <span>❌ Error: ${data.error}</span>
+            </div>`;
+          return;
         }
+
+        if (!data.pages || data.pages.length === 0) {
+          listDiv.innerHTML = `
+            <div class="alert-card alert-warning">
+                <span>⚠️ No screens found in this project.</span>
+            </div>`;
+          return;
+        }
+
+        // Add Search & Bulk Header
+        let html = `
+            <div class="screen-list-header glass-card" style="padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <input type="text" class="screen-search" placeholder="🔍 Search screens by name..." onkeyup="filterFigmaScreens(this.value)">
+                <div class="screen-bulk-actions">
+                    <button class="btn-bulk" onclick="bulkToggleScreens(true)">Select All</button>
+                    <button class="btn-bulk" onclick="bulkToggleScreens(false)">Clear All</button>
+                </div>
+            </div>
+        `;
+
+        data.pages.forEach(page => {
+          html += `
+            <div class="page-container" data-page-id="${page.id}">
+                <div class="page-header">
+                    <div class="page-title-box">
+                        <span class="page-name-text">📂 ${page.name}</span>
+                        <span class="page-badge">${page.screens.length} screens</span>
+                    </div>
+                    <button class="btn-toggle-page" onclick="toggleFigmaPageGroup('${page.id}')">Toggle Selection</button>
+                </div>
+                <div class="screen-grid">`;
+          
+          page.screens.forEach(screen => {
+            html += `
+              <div class="screen-item" data-id="${screen.id}" data-name="${screen.name}" onclick="toggleFigmaScreen(this)">
+                <div class="screen-icon"><i class="fas fa-layer-group"></i></div>
+                <input type="checkbox" class="figma-page-checkbox" value="${screen.id}" data-name="${screen.name}" style="display:none">
+                <span class="screen-name">${screen.name}</span>
+              </div>
+            `;
+          });
+          html += '</div></div>';
+        });
+
+        listDiv.innerHTML = html;
+        document.getElementById('cousability-controls').style.display = 'block';
+        updateUsabilityBtnState();
+
+      } catch (error) {
+        listDiv.innerHTML = `<div class="alert-card alert-error">❌ Connection Error: ${error.message}</div>`;
       }
-    };
+    }
+
+    function filterFigmaScreens(query) {
+      const q = query.toLowerCase();
+      document.querySelectorAll('.screen-item').forEach(item => {
+        const name = item.getAttribute('data-name').toLowerCase();
+        item.style.display = name.includes(q) ? 'flex' : 'none';
+      });
+    }
+
+    function bulkToggleScreens(select) {
+      document.querySelectorAll('.screen-item').forEach(item => {
+        const checkbox = item.querySelector('.figma-page-checkbox');
+        checkbox.checked = select;
+        if (select) item.classList.add('selected');
+        else item.classList.remove('selected');
+      });
+      updateUsabilityBtnState();
+    }
+
+    function toggleFigmaPageGroup(pageId) {
+        const container = document.querySelector(`.page-container[data-page-id="${pageId}"]`);
+        const screens = container.querySelectorAll('.screen-item');
+        const anyUnselected = Array.from(screens).some(s => !s.querySelector('.figma-page-checkbox').checked);
+        
+        screens.forEach(s => {
+            const cb = s.querySelector('.figma-page-checkbox');
+            cb.checked = anyUnselected;
+            if (anyUnselected) s.classList.add('selected');
+            else s.classList.remove('selected');
+        });
+        updateUsabilityBtnState();
+    }
+
+    function toggleFigmaScreen(el) {
+        const cb = el.querySelector('.figma-page-checkbox');
+        cb.checked = !cb.checked;
+        if (cb.checked) el.classList.add('selected');
+        else el.classList.remove('selected');
+        updateUsabilityBtnState();
+    }
+
+    function updateUsabilityBtnState() {
+      const selected = document.querySelectorAll('.figma-page-checkbox:checked').length > 0;
+      document.getElementById('run-usability-btn').disabled = !selected;
+    }
+
+    function toggleScreenCard(card) {
+        const checkbox = card.querySelector('.figma-page-checkbox');
+        checkbox.checked = !checkbox.checked;
+        updateCardUI(checkbox);
+        updateUsabilityBtnState();
+    }
+
+    function updateCardUI(checkbox) {
+        const card = checkbox.closest('.screen-card');
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    }
+
+    async function runUsabilityAnalysis() {
+      const url = document.getElementById('figma-url-input').value.trim();
+      const reportDiv = document.getElementById('cousability-report-content');
+      const reportCard = document.getElementById('cousability-result-card');
+      const analyzeBtn = document.getElementById('run-usability-btn');
+
+      const selectedPages = Array.from(document.querySelectorAll('.figma-page-checkbox:checked')).map(cb => ({
+        id: cb.value,
+        name: cb.getAttribute('data-name')
+      }));
+
+      const selectedFactors = Array.from(document.querySelectorAll('.usability-check:checked')).map(cb => cb.value);
+
+      if (selectedPages.length === 0) return;
+
+      analyzeBtn.disabled = true;
+      const originalText = analyzeBtn.innerHTML;
+      analyzeBtn.innerHTML = '⏳ Analyzing...';
+
+      // Show skeleton state + loading header
+      reportCard.style.display = 'block';
+      reportDiv.innerHTML = `
+        <div style="text-align:center; padding: 40px 20px;">
+            <div class="loading-spinner" style="margin: 0 auto; width: 40px; height: 40px; border-width: 4px;"></div>
+            <h3 style="margin-top: 25px; color: #fff; font-size: 20px;">AI Vision Audit in Progress</h3>
+            <p style="color: rgba(255,255,255,0.5); font-size: 14px; margin-top: 10px;">Evaluating ${selectedPages.length} screens for ${selectedFactors.length} usability factors. This may take a minute...</p>
+        </div>`;
+      // Smoothly bring notice if it is off-screen, otherwise stay still
+      reportCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      try {
+        const response = await fetch('/co-usability/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            figma_url: url,
+            pages: selectedPages,
+            factors: selectedFactors
+          })
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          reportDiv.innerHTML = `<div class="alert-card alert-error">❌ Analysis Failed: ${data.error}</div>`;
+          return;
+        }
+
+        // Parse Metadata Block
+        let meta = { score: 0, critical: 0, major: 0, minor: 0, insights: [] };
+        const metaMatch = data.report.match(/META:\s*({.*})/);
+        if (metaMatch) {
+            try { meta = JSON.parse(metaMatch[1]); } catch(e) {}
+        }
+
+        // Custom Render Function
+        reportDiv.innerHTML = renderUsabilityAuditDash(data.report, meta);
+
+      } catch (error) {
+        reportDiv.innerHTML = `<div class="alert-card alert-error">❌ Critical Failure: ${error.message}</div>`;
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = originalText;
+      }
+    }
+
+    function renderUsabilityAuditDash(rawMarkdown, meta) {
+        let findings = [];
+        const lines = rawMarkdown.split('\n');
+        
+        // Advanced table parser
+        lines.forEach(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('|') && !trimmedLine.includes('---')) {
+                const rawCells = trimmedLine.split('|').map(c => c.trim()).filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
+                const cells = rawCells.map(c => c.replace(/\*\*/g, '').replace(/\*/g, '').trim());
+                
+                if (cells.length >= 5 && cells[0].toLowerCase() !== 'factor' && cells[1].toLowerCase() !== 'severity') {
+                    findings.push({
+                        factor: cells[0],
+                        severity: cells[1],
+                        screen: cells[2],
+                        observation: cells[3],
+                        recommendation: cells[4]
+                    });
+                }
+            }
+        });
+
+        // Dynamic Score Calculation
+        let calcCritical = findings.filter(f => f.severity.toLowerCase().includes('crit')).length;
+        let calcMajor = findings.filter(f => f.severity.toLowerCase().includes('maj')).length;
+        let calcMinor = findings.filter(f => f.severity.toLowerCase().includes('min')).length;
+        let calculatedScore = Math.max(0, 100 - (calcCritical * 25 + calcMajor * 10 + calcMinor * 5));
+        
+        const finalScore = (meta.score && meta.score < 100) ? meta.score : (findings.length > 0 ? calculatedScore : 100);
+        const finalCrit = Math.max(calcCritical, meta.critical || 0);
+        const finalMaj = Math.max(calcMajor, meta.major || 0);
+        const finalMin = Math.max(calcMinor, meta.minor || 0);
+        const scoreColor = finalScore > 80 ? '#10b981' : (finalScore > 50 ? '#f59e0b' : '#ef4444');
+
+        let html = `
+            <div class="audit-dashboard">
+                <!-- 1. Executive Summary Grid -->
+                <div class="audit-summary-grid" style="padding: 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                    <div class="summary-stat-card" style="border-top: 4px solid ${scoreColor}">
+                        <div class="stat-value" style="color: ${scoreColor}">${finalScore}%</div>
+                        <div class="stat-label">Usability Score</div>
+                    </div>
+                    <div class="summary-stat-card" style="border-top: 4px solid #ef4444;">
+                        <div class="stat-value" style="color:#ef4444;">${finalCrit}</div>
+                        <div class="stat-label">Critical Issues</div>
+                    </div>
+                    <div class="summary-stat-card" style="border-top: 4px solid #f59e0b;">
+                        <div class="stat-value" style="color:#f59e0b;">${finalMaj}</div>
+                        <div class="stat-label">Major Friction</div>
+                    </div>
+                    <div class="summary-stat-card" style="border-top: 4px solid #3b82f6;">
+                        <div class="stat-value" style="color:#3b82f6;">${finalMin}</div>
+                        <div class="stat-label">Minor Polish</div>
+                    </div>
+                </div>
+
+                <!-- 2. Strategic Insights -->
+                ${(meta.insights && meta.insights.length > 0) ? `
+                    <div class="insight-box">
+                        <div class="insight-title"><i class="fas fa-lightbulb"></i> Strategic UX Insights</div>
+                        <ul class="insight-list">
+                            ${meta.insights.map(i => `<li>${i.replace(/\*\*/g, '')}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+
+                <!-- 3. Detailed Data Table -->
+                <div class="audit-table-wrapper">
+                    <table class="audit-data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%">Usability Factor</th>
+                                <th style="width: 12%">Severity</th>
+                                <th style="width: 15%">Screen</th>
+                                <th style="width: 25%">Observation</th>
+                                <th style="width: 28%">Recommendation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${findings.length > 0 ? findings.map(f => {
+                                const sText = f.severity.toLowerCase();
+                                const sevClass = sText.includes('crit') ? 'sev-critical' : 
+                                               (sText.includes('maj') ? 'sev-major' : 'sev-minor');
+                                return `
+                                    <tr>
+                                        <td style="font-weight: 700; color: #fff;">${f.factor}</td>
+                                        <td><span class="severity-chip ${sevClass}">${f.severity}</span></td>
+                                        <td style="color: #94a3b8; font-size: 13px;">📟 ${f.screen}</td>
+                                        <td style="line-height: 1.6;">${f.observation}</td>
+                                        <td style="line-height: 1.6; color: #fff;">
+                                            <span class="rec-text-highlight">FIX:</span> ${f.recommendation}
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('') : `
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding: 60px; color: #10b981; font-size: 16px;">
+                                        <i class="fas fa-check-circle" style="margin-right: 10px;"></i> No usability defects found.
+                                    </td>
+                                </tr>
+                            `}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="padding: 24px; text-align: center; color: rgba(255,255,255,0.2); font-size: 11px;">
+                    Generated by ConanAI Agentic Engine • Confidential Design Audit
+                </div>
+            </div>
+        `;
+        return html;
+    }
+
+    function copyUsabilityReport() {
+        const content = document.getElementById('cousability-report-content').innerText;
+        navigator.clipboard.writeText(content).then(() => {
+            alert('✅ Report copied to clipboard!');
+        });
+    }
+
+    function downloadUsabilityCSV() {
+        const table = document.querySelector('#cousability-report-content table');
+        if (!table) {
+            alert('⚠️ No report table found to export.');
+            return;
+        }
+
+        let csv = [];
+        const rows = table.querySelectorAll('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = [], cols = rows[i].querySelectorAll('td, th');
+            for (let j = 0; j < cols.length; j++) {
+                // Escape quotes and wrap in quotes
+                let data = cols[j].innerText.replace(/"/g, '""');
+                row.push('"' + data + '"');
+            }
+            csv.push(row.join(','));
+        }
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `Usability_Audit_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function markdownToHTML(text) {
+        if (!text) return "";
+        
+        let lines = text.split('\n');
+        let html = "";
+        let inTable = false;
+        let tableHeader = true;
+        
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+            
+            // Detect Table
+            if (line.startsWith('|') && line.includes('|', 1)) {
+                if (!inTable) {
+                    html += '<table><thead>';
+                    inTable = true;
+                    tableHeader = true;
+                }
+                
+                let cells = line.split('|').filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
+                
+                // Skip separator row (|---|---|)
+                if (line.includes('---')) {
+                    html += '</thead><tbody>';
+                    tableHeader = false;
+                    continue;
+                }
+                
+                html += '<tr>';
+                cells.forEach(cell => {
+                    let tag = tableHeader ? 'th' : 'td';
+                    html += `<${tag}>${cell.trim()}</${tag}>`;
+                });
+                html += '</tr>';
+                
+            } else {
+                if (inTable) {
+                    html += '</tbody></table>';
+                    inTable = false;
+                }
+                
+                // Process standard markdown
+                if (line.startsWith('### ')) {
+                    html += `<h3 style="color:#fff; margin-top:20px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${line.substring(4)}</h3>`;
+                } else if (line.startsWith('## ')) {
+                    html += `<h2 style="color:#fff; margin-top:24px;">${line.substring(3)}</h2>`;
+                } else if (line.startsWith('# ')) {
+                    html += `<h1 style="color:#fff;">${line.substring(2)}</h1>`;
+                } else if (line.startsWith('> ')) {
+                    html += `<blockquote style="border-left:4px solid #3b82f6; padding-left:15px; margin: 10px 0; color:#94a3b8;">${line.substring(2)}</blockquote>`;
+                } else if (line.startsWith('- ')) {
+                    html += `<li style="margin-left:20px; color:#cbd5e1;">${line.substring(2)}</li>`;
+                } else if (line === "") {
+                    html += '<br/>';
+                } else {
+                    // Inline bold/italic
+                    let formatted = line
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    html += `<p style="margin: 5px 0;">${formatted}</p>`;
+                }
+            }
+        }
+        
+        if (inTable) html += '</tbody></table>';
+        
+        return html;
+    }
 
   </script>
 
