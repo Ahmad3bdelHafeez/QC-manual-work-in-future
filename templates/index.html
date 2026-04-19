@@ -1038,6 +1038,9 @@
           </p>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-blue" id="exec-generate-report-btn" onclick="generateExecutionReport()">
+            📋 Generate Report
+          </button>
           <button class="btn-blue" id="exec-load-btn" onclick="loadTestCasesForExecution()">
             📥 Load Test Cases
           </button>
@@ -1702,18 +1705,34 @@
             #figma-pages-list::-webkit-scrollbar { width: 5px; }
             #figma-pages-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
       </style>
-    <div id="exec-video-modal"
-      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
-      <div
-        style="position:relative; background:#0f172a; border-radius:16px; padding:24px; max-width:860px; width:90%; box-shadow:0 30px 60px rgba(0,0,0,0.6);">
-        <button onclick="closeExecVideoModal()"
-          style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:24px; cursor:pointer; color:#94a3b8;">✕</button>
-        <h3 style="margin:0 0 16px 0; color:#fff;">🎬 Execution Recording</h3>
-        <video id="exec-video-player" controls style="width:100%; border-radius:8px; background:#000;"></video>
-        <p id="exec-video-label" style="color:#64748b; font-size:13px; margin-top:10px;"></p>
+  </div>
+
+  <!-- Exec Video Modal -->
+  <div id="exec-video-modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+    <div
+      style="position:relative; background:#0f172a; border-radius:16px; padding:24px; max-width:860px; width:90%; box-shadow:0 30px 60px rgba(0,0,0,0.6);">
+      <button onclick="closeExecVideoModal()"
+        style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:24px; cursor:pointer; color:#94a3b8;">✕</button>
+      <h3 style="margin:0 0 16px 0; color:#fff;">🎬 Execution Recording</h3>
+      <video id="exec-video-player" controls style="width:100%; border-radius:8px; background:#000;"></video>
+      <p id="exec-video-label" style="color:#64748b; font-size:13px; margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <!-- Actual Result Modal -->
+  <div id="actual-result-modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+    <div
+      style="position:relative; background:#0f172a; border-radius:16px; padding:24px; max-width:700px; width:90%; box-shadow:0 30px 60px rgba(0,0,0,0.6);">
+      <button onclick="closeActualResultModal()"
+        style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:24px; cursor:pointer; color:#94a3b8;">✕</button>
+      <h3 style="margin:0 0 16px 0; color:#fff;">📝 Actual Result Detail</h3>
+      <textarea id="actual-result-modal-text" style="width:100%; min-height:350px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#e2e8f0; font-size:14px; padding:16px; resize:vertical; font-family:monospace; line-height:1.5; outline:none; white-space:pre-wrap;"></textarea>
+      <div style="margin-top:16px; text-align:right;">
+         <button id="actual-result-save-btn" onclick="saveActualResultFromModal()" style="background:#3b82f6; color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s ease;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">Save Changes</button>
       </div>
     </div>
-
   </div>
 
   <!-- Chat Modal -->
@@ -3558,6 +3577,7 @@
           <th>Description</th>
           <th>Steps</th>
           <th>Expected Result</th>
+          <th>Actual Result</th>
           <th style="width:130px; text-align:center;">Status</th>
           <th style="width:110px; text-align:center;">Run</th>
           <th style="width:90px; text-align:center;">Video</th>
@@ -3581,6 +3601,9 @@
           <td style="font-size:13px; max-width:200px;">${desc}${row.description && row.description.length > 120 ? '…' : ''}</td>
           <td style="font-size:12px; color:#94a3b8; max-width:180px;">${steps}${row.steps && row.steps.length > 100 ? '…' : ''}</td>
           <td style="font-size:12px; color:#94a3b8; max-width:180px;">${exp}${row.expected && row.expected.length > 100 ? '…' : ''}</td>
+          <td id="exec-actual-${i}" style="font-size:12px; color:#1e293b; max-width:220px; padding:10px;">
+             ${row.answer || row.status === 'failed' || row.status === 'blocked' ? `<button onclick="openActualResultModal('execution', ${i})" style="width:100%; text-align:left; background:rgba(0,0,0,0.03); border:1px solid ${row.status === 'failed' ? '#ef4444' : 'rgba(0,0,0,0.1)'}; border-radius:8px; color:#334155; font-size:12px; padding:8px; cursor:pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(0,0,0,0.06)'" onmouseout="this.style.background='rgba(0,0,0,0.03)'">📝 View / Edit Result</button>` : '<span style="color:#94a3b8; font-style:italic;">AI result will appear here...</span>'}
+          </td>
           <td id="exec-status-${i}" style="text-align:center;">${execStatusBadge(row.status)}</td>
           <td style="text-align:center;">
             <button id="exec-run-btn-${i}" class="btn-blue" ${runDisabled}
@@ -3602,26 +3625,26 @@
       // Mark as running
       row.status = 'running';
       row.video = null;
+      row.answer = '🤖 Running test...';
       const statusCell = document.getElementById(`exec-status-${rowIndex}`);
       const runBtn = document.getElementById(`exec-run-btn-${rowIndex}`);
       const videoCell = document.getElementById(`exec-video-${rowIndex}`);
+      const actualCell = document.getElementById(`exec-actual-${rowIndex}`);
 
       if (statusCell) statusCell.innerHTML = execStatusBadge('running');
       if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳'; }
       if (videoCell) videoCell.innerHTML = '<span style="color:#475569;font-size:12px;">—</span>';
+      if (actualCell) actualCell.innerHTML = '<span style="color:#3b82f6;font-style:italic;">🤖 Running test...</span>';
 
-      const prompt = `You are an AI test automation agent. Execute the following test case using browser tools.
+      const prompt = `You are a technical web UI tester. You have access to browser execution tools through the Playwright MCP server. Your job is to read the test case and execute it step-by-step using the provided tools. You might need to navigate to URLs, fill forms, click buttons, and read screenshots or elements. After performing the steps and observing the result, you MUST output your final conclusion formatted EXACTLY like this: {FINAL_STATUS: <Passed|Failed|Blocked>, STEPS: <Your detailed step-by-step breakdown of what you executed and observed>} DO NOT output FINAL_STATUS until you have executed all tool calls needed and have successfully tested the outcome. Wait for the tool results! Test case to execute:
 
-Test Case ID: ${row.id}
 Description: ${row.description}
 Steps to Execute:
 ${row.steps}
-Expected Result: ${row.expected}
-
-After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a brief reason.`;
+Expected Result: ${row.expected}`;
 
       try {
-        const response = await fetch('/execute_mistral', {
+        const response = await fetch('/execute_qwen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -3632,31 +3655,27 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
         if (!response.ok) throw new Error(`Server error ${response.status}`);
         const data = await response.json();
 
-        const answer = (data.answer || '').toUpperCase();
-        let status = 'failed';
-        if (answer.includes('PASSED')) status = 'passed';
-        else if (answer.includes('BLOCKED')) status = 'blocked';
+        let status = (data.answer || 'failed').toLowerCase();
+        let cleanReason = (data.steps || data.answer || '');
+        
+        row.status = status;
+        row.answer = cleanReason;
 
         // Extract video path
-        let videoPath = null;
-        if (data.video) {
-          // data.video is like "/tmp/agent_YYYYMMDD_HHMMSS.mp4"
-          const filename = data.video.replace(/^\/tmp\//, '');
-          videoPath = `/video/${filename}`;
-        }
-
-        row.status = status;
+        let videoPath = data.video || null;
         row.video = videoPath;
-        row.answer = data.answer || '';
 
         // Update DOM
         if (statusCell) statusCell.innerHTML = execStatusBadge(status);
+        if (actualCell) {
+            actualCell.innerHTML = `<button onclick="openActualResultModal('execution', ${rowIndex})" style="width:100%; text-align:left; background:rgba(0,0,0,0.03); border:1px solid ${status === 'failed' ? '#ef4444' : 'rgba(0,0,0,0.1)'}; border-radius:8px; color:#334155; font-size:12px; padding:8px; cursor:pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(0,0,0,0.06)'" onmouseout="this.style.background='rgba(0,0,0,0.03)'">📝 View / Edit Result</button>`;
+        }
         if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run'; }
         if (videoCell) {
-          if (videoPath && (status === 'failed' || status === 'blocked')) {
+          if (videoPath) {
             const safeId = (row.id || '').replace(/'/g, '');
             videoCell.innerHTML = `<button class="btn-blue" onclick="openExecVideo('${videoPath}','${safeId}')"
-              style="padding:5px 12px; font-size:12px;">🎬 Watch</button>`;
+              style="padding:5px 12px; font-size:12px; background:#8b5cf6;">🎬 Watch</button>`;
           } else {
             videoCell.innerHTML = '<span style="color:#475569;font-size:12px;">—</span>';
           }
@@ -3666,6 +3685,9 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
         row.status = 'failed';
         row.answer = 'Error: ' + err.message;
         if (statusCell) statusCell.innerHTML = execStatusBadge('failed');
+        if (actualCell) {
+            actualCell.innerHTML = `<button onclick="openActualResultModal('execution', ${rowIndex})" style="width:100%; text-align:left; background:rgba(0,0,0,0.03); border:1px solid #ef4444; border-radius:8px; color:#334155; font-size:12px; padding:8px; cursor:pointer;">📝 View / Edit Result</button>`;
+        }
         if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run'; }
       }
 
@@ -3713,6 +3735,87 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
       setTimeout(() => { progressWrap.style.display = 'none'; }, 3000);
     }
 
+    function generateExecutionReport() {
+        if (!executionRows || executionRows.length === 0) return alert('No test cases loaded to report on.');
+
+        const total = executionRows.length;
+        const passed = executionRows.filter(r => r.status === 'passed').length;
+        const failed = executionRows.filter(r => r.status === 'failed').length;
+        const blocked = executionRows.filter(r => r.status === 'blocked').length;
+        const pending = executionRows.filter(r => r.status === 'pending').length;
+
+        const dateStr = new Date().toLocaleString();
+
+        let tableRows = '';
+        executionRows.forEach((r, i) => {
+            const statusColor = r.status === 'passed' ? '#10b981' : (r.status === 'failed' ? '#ef4444' : (r.status === 'blocked' ? '#f59e0b' : '#64748b'));
+            tableRows += `<tr>
+                <td>${i+1}</td>
+                <td><strong>${r.id}</strong></td>
+                <td>${(r.description||'').replace(/</g, '&lt;')}</td>
+                <td style="color:${statusColor}; font-weight:bold; text-transform:capitalize;">${r.status}</td>
+                <td><pre style="margin:0; white-space:pre-wrap; font-family:monospace; font-size:13px; color:#334155;">${(r.answer||'').replace(/</g, '&lt;')}</pre></td>
+            </tr>`;
+        });
+
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Execution Report - ${dateStr}</title>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f8fafc; color: #1e293b; line-height: 1.6; margin: 0; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 { margin-bottom: 5px; color: #0f172a; }
+    .header p { color: #64748b; margin-top: 0; }
+    .stats-container { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; flex-wrap: wrap; }
+    .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; min-width: 140px; border: 1px solid #e2e8f0; }
+    .stat-card h3 { margin: 0 0 10px 0; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-card p { margin: 0; font-size: 32px; font-weight: 800; }
+    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; }
+    th { background: #0f172a; color: white; text-align: left; padding: 16px; font-size: 14px; }
+    td { padding: 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background-color: #f1f5f9; }
+</style>
+</head>
+<body>
+    <div class="header">
+        <h1>📑 Execution Test Report</h1>
+        <p>Generated on: ${dateStr}</p>
+    </div>
+    
+    <div class="stats-container">
+        <div class="stat-card"><h3>Total Tests</h3><p style="color:#0f172a;">${total}</p></div>
+        <div class="stat-card"><h3>Passed</h3><p style="color:#10b981;">${passed}</p></div>
+        <div class="stat-card"><h3>Failed</h3><p style="color:#ef4444;">${failed}</p></div>
+        <div class="stat-card"><h3>Blocked</h3><p style="color:#f59e0b;">${blocked}</p></div>
+        <div class="stat-card"><h3>Pending</h3><p style="color:#64748b;">${pending}</p></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th style="width:50px;">#</th><th style="width:120px;">Test ID</th><th style="width:300px;">Description</th><th style="width:100px;">Status</th><th>Execution Trace / Actual Result</th></tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+    </table>
+</body>
+</html>`;
+
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = `Execution_Report_${new Date().toISOString().replace(/[:.]/g, '-')}.html`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     function updateExecStats() {
       const total = executionRows.length;
       const passed = executionRows.filter(r => r.status === 'passed').length;
@@ -3741,6 +3844,44 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
       modal.style.display = 'none';
       player.pause();
       player.src = '';
+    }
+
+    let currentResultTargetIndex = null;
+    let currentResultTargetType = null; 
+
+    function openActualResultModal(type, index) {
+        currentResultTargetType = type;
+        currentResultTargetIndex = index;
+        const modal = document.getElementById('actual-result-modal');
+        const textarea = document.getElementById('actual-result-modal-text');
+        const title = document.querySelector('#actual-result-modal h3');
+        const saveBtn = document.getElementById('actual-result-save-btn');
+        
+        title.textContent = '📝 Actual Result Detail';
+        saveBtn.style.display = 'inline-block';
+        
+        if(type === 'cocycle') {
+            textarea.value = coCycleTests[index].actualResult || '';
+        } else {
+            textarea.value = executionRows[index].answer || '';
+        }
+        modal.style.display = 'flex';
+    }
+
+    function closeActualResultModal() {
+        document.getElementById('actual-result-modal').style.display = 'none';
+    }
+
+    function saveActualResultFromModal() {
+        const textarea = document.getElementById('actual-result-modal-text');
+        if(currentResultTargetType === 'cocycle') {
+            coCycleTests[currentResultTargetIndex].actualResult = textarea.value;
+            renderCoCycleTable();
+        } else {
+            executionRows[currentResultTargetIndex].answer = textarea.value;
+            renderExecutionTable();
+        }
+        closeActualResultModal();
     }
 
     // Close video modal on backdrop click
@@ -3888,14 +4029,16 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
           <td style="font-size:12px; color:#64748b; white-space:pre-wrap;">${test.expected || '—'}</td>
           <td style="padding:10px;">
             <div id="actual-result-container-${i}" style="display: ${test.status === 'failed' || test.status === 'blocked' || test.actualResult ? 'block' : 'none'}; animation: fadeIn 0.3s ease;">
-              <textarea 
-                id="actual-result-${i}"
-                oninput="saveActualResult(${i}, this.value)" 
-                placeholder="Explain the issue..."
-                style="width:100%; min-height:80px; background:rgba(255,255,255,0.03); border:1px solid ${test.status === 'failed' ? '#ef4444' : 'rgba(255,255,255,0.1)'}; border-radius:10px; color:#fff; font-size:13px; padding:12px; resize:vertical; font-family:inherit; transition: all 0.2s ease; outline:none;"
-                onfocus="this.style.border='1px solid #3b82f6'; this.style.background='rgba(59,130,246,0.05)';"
-                onblur="this.style.border='1px solid ${test.status === 'failed' ? '#ef4444' : 'rgba(255,255,255,0.1)'}'; this.style.background='rgba(255,255,255,0.03)';"
-              >${test.actualResult || ''}</textarea>
+              <button onclick="openActualResultModal('cocycle', ${i})" style="width:100%; text-align:left; background:rgba(255,255,255,0.03); border:1px solid ${test.status === 'failed' ? '#ef4444' : 'rgba(255,255,255,0.1)'}; border-radius:10px; color:#fff; font-size:13px; padding:12px; cursor:pointer; transition: all 0.2s ease; outline:none;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                📝 View / Edit Result
+              </button>
+              ${test.video ? `
+              <div style="margin-top: 8px; text-align: left;">
+                <button onclick="openExecVideo('${test.video}','${test.key}')" style="display:inline-flex; align-items:center; gap:6px; background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.3); color:#c4b5fd; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s ease;" onmouseover="this.style.background='rgba(139,92,246,0.25)'" onmouseout="this.style.background='rgba(139,92,246,0.15)'">
+                  🎬 Watch
+                </button>
+              </div>
+              ` : ''}
             </div>
             ${!(test.status === 'failed' || test.status === 'blocked' || test.actualResult) ? `<div style="text-align:center; color:#64748b; font-size:11px; font-style:italic;">—</div>` : ''}
           </td>
@@ -3910,6 +4053,9 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
               <button onclick="updateCoCycleStatus(${i}, 'passed')" class="btn-blue" style="background:#10b981; padding:6px 10px; font-size:12px;" title="Pass">✅</button>
               <button onclick="updateCoCycleStatus(${i}, 'failed')" class="btn-blue" style="background:#ef4444; padding:6px 10px; font-size:12px;" title="Fail">❌</button>
               <button onclick="updateCoCycleStatus(${i}, 'blocked')" class="btn-blue" style="background:#f59e0b; padding:6px 10px; font-size:12px;" title="Block">🚧</button>
+              <button onclick="runTestWithAI(${i})" class="btn-blue" style="background:${test.status === 'running' ? '#64748b' : '#8b5cf6'}; padding:6px 10px; font-size:12px;" title="Run AI Agent" ${test.status === 'running' ? 'disabled' : ''}>
+                ${test.status === 'running' ? '⏳' : '🤖'}
+              </button>
               <button onclick="reportBugFromCycle(${i})" class="btn-blue" style="background:#475569; padding:6px 10px; font-size:12px;" title="Report Bug">🐞</button>
             </div>
           </td>
@@ -3920,6 +4066,47 @@ After execution, conclude with one of: PASSED, FAILED, or BLOCKED followed by a 
 
     function saveActualResult(index, value) {
       coCycleTests[index].actualResult = value;
+    }
+
+    async function runTestWithAI(index) {
+      const test = coCycleTests[index];
+      
+      // Prompt construction
+      const prompt = `You are a technical web UI tester. You have access to browser execution tools through the Playwright MCP server. Your job is to read the test case and execute it step-by-step using the provided tools. You might need to navigate to URLs, fill forms, click buttons, and read screenshots or elements. After performing the steps and observing the result, you MUST output your final conclusion formatted EXACTLY like this: {FINAL_STATUS: <Passed|Failed|Blocked>, STEPS: <Your detailed step-by-step breakdown of what you executed and observed>} DO NOT output FINAL_STATUS until you have executed all tool calls needed and have successfully tested the outcome. Wait for the tool results! Test case to execute:
+
+Test Summary: ${test.summary}
+Steps:
+${test.steps}
+Expected Result: ${test.expected}`;
+
+      test.status = 'running';
+      test.actualResult = '🤖 AI Agent is running the test case... Please wait.';
+      renderCoCycleTable();
+
+      try {
+          const response = await fetch('/execute_qwen', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  messages: [{ role: "user", content: prompt }]
+              })
+          });
+          const data = await response.json();
+          if (data.error) throw new Error(data.error);
+
+          let finalStatus = (data.answer || 'failed').toLowerCase();
+          let cleanReason = (data.steps || data.answer || '');
+
+          test.status = finalStatus;
+          test.actualResult = cleanReason;
+          test.video = data.video;
+      } catch (e) {
+          test.actualResult = "❌ AI execution failed: " + e.message;
+          test.status = 'blocked';
+      }
+
+      renderCoCycleTable();
+      updateCoCycleProgress();
     }
 
     function updateCoCycleStatus(index, status) {
