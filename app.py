@@ -82,7 +82,7 @@ os.makedirs(VIDEO_DIR, exist_ok=True)
 # Figma OAuth Configuration
 FIGMA_CLIENT_ID = os.getenv('FIGMA_CLIENT_ID', 'JnmzWuEpo8leaFjBuNijvi')
 FIGMA_CLIENT_SECRET = os.getenv('FIGMA_CLIENT_SECRET', 'sbOTWwQccDNrCz3L7sVcI8LQQvFWwP')
-FIGMA_REDIRECT_URI = os.getenv('FIGMA_REDIRECT_URI', 'https://api-mg.onrender.com/callback')
+FIGMA_REDIRECT_URI = os.getenv('FIGMA_REDIRECT_URI', 'http://127.0.0.1:8084/callback')
 
 
 def mistral_call_with_retry(client, **kwargs):
@@ -346,13 +346,13 @@ def execute_mistral():
         return jsonify({"error": "MISTRAL_API_KEY not set"}), 500
 
     answer, steps = asyncio.run(run_agent(messages))
-
+    print(answer)
     # Build video
     video_name = f"agent_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
     video_path = os.path.join(VIDEO_DIR, video_name)
     has_video  = build_video(steps, video_path)
     print(has_video)
-    print(f"{steps}")
+    # print(f"{steps}")
     # Strip screenshots from JSON response (they're in the video)
     clean_steps = [
         {"step": s["step_num"], "tool": s["name"], "args": s["args"], "result": s["result"]}
@@ -362,7 +362,153 @@ def execute_mistral():
     return jsonify({
         "answer": answer,
         "steps":  clean_steps,
-        "video":  f"/tmp/{video_name}" if has_video else None,
+        "video":  f"/video/{video_name}" if has_video else None,
+    })
+
+
+async def run_qwen_agent(messages):
+    import aiohttp
+    import json
+    steps = []
+
+    async with sse_client(MCP_URL) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            # Hard reset before every run
+            await clear_browser_session(session)
+            mcp_tools = await session.list_tools()
+            tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": t.name,
+                        "description": t.description or "",
+                        "parameters": t.inputSchema or {},
+                    },
+                }
+                for t in mcp_tools.tools
+            ]
+
+            headers = {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true"
+            }
+            url = "https://devalue-unfounded-venture.ngrok-free.dev/api/chat"
+            
+            async with aiohttp.ClientSession() as http_session:
+                for _ in range(10):
+                    current_instruction = messages[0]["content"]
+                    
+                    if steps:
+                        current_instruction += "\n\n--- EXECUTION HISTORY SO FAR ---\n"
+                        for step in steps:
+                            current_instruction += f"\nYou executed tool '{step['name']}' with arguments: {json.dumps(step['args'])}\n"
+                            current_instruction += f"The tool returned:\n{step['result'].strip()[:800]}\n"
+                        current_instruction += "\nObserve the history above and continue from where you left off. If you have completed the test case, do not call any more tools, and output your final conclusion exactly as instructed."
+                        
+                    one_prompt_messages = [{"role": "user", "content": current_instruction}]
+
+                    payload = {
+                        "model": "qwen3.5:4b",
+                        "stream": False,
+                        "messages": one_prompt_messages,
+                        "tools": tools,
+                    }
+                    try:
+                        async with http_session.post(url, json=payload, headers=headers) as resp:
+                            if resp.status != 200:
+                                err_txt = await resp.text()
+                                raise RuntimeError(f"Qwen API error {resp.status}: {err_txt}")
+                            
+                            data = await resp.json()
+                    except Exception as e:
+                        print(f"Failed to reach Qwen endpoint: {e}")
+                        return f"API Error: {str(e)}", steps
+
+                    msg = data.get("message", {})
+                    tool_calls = msg.get("tool_calls", [])
+
+                    if not tool_calls:
+                        content = msg.get("content") or ""
+                        return content, steps
+
+                    for tc in tool_calls:
+                        tc_func = tc.get("function", {})
+                        tc_name = tc_func.get("name")
+                        tc_args = tc_func.get("arguments", "{}")
+                        args = json.loads(tc_args) if isinstance(tc_args, str) else tc_args
+                        
+                        try:
+                            result = await session.call_tool(tc_name, args)
+                            result_text = "\n".join(
+                                b.text if hasattr(b, "text") else str(b)
+                                for b in result.content
+                            )
+                        except Exception as e:
+                            print(f"[run_qwen_agent] Tool execution failed: {e}")
+                            result_text = f"Tool Error: {str(e)}"
+
+                        if len(result_text) > MAX_TOOL_RESULT_CHARS:
+                            result_text = result_text[:MAX_TOOL_RESULT_CHARS] + "\n...[truncated]"
+
+                        screenshot_b64 = await take_screenshot(session, len(steps) + 1)
+                        
+                        steps.append({
+                            "step_num": len(steps) + 1,
+                            "name": tc_name,
+                            "args": args,
+                            "result": result_text,
+                            "screenshot": screenshot_b64,
+                        })
+
+                return "Max turns reached.", steps
+
+
+@app.post("/execute_qwen")
+def execute_qwen():
+    body = request.get_json()
+    messages = body.get("messages", [])
+
+    if not messages:
+        return jsonify({"error": "messages required"}), 400
+
+    answer, steps = asyncio.run(run_qwen_agent(messages))
+    print("[execute_qwen] messages:", messages)
+    print("[execute_qwen] Result:", answer)
+    
+    # Build video
+    video_name = f"qwen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+    video_path = os.path.join(VIDEO_DIR, video_name)
+    has_video = build_video(steps, video_path)
+    
+    clean_steps = [
+        {"step": s["step_num"], "tool": s["name"], "args": s["args"], "result": s["result"]}
+        for s in steps
+    ]
+
+    import re
+    match = re.search(r'\{FINAL_STATUS:\s*(Passed|Failed|Blocked),\s*STEPS:\s*([^}]+)\}', answer, re.IGNORECASE)
+    if match:
+        final_answer = match.group(1).lower()
+        extracted_steps = match.group(2).strip()
+    else:
+        # Fallback if Qwen acts as a chatbot and omits format: parse its tone + generate explicit tool timeline
+        lower_ans = answer.lower()
+        if "passed" in lower_ans or "successfully" in lower_ans:
+            final_answer = "passed"
+        elif "blocked" in lower_ans or "error" in lower_ans:
+            final_answer = "blocked"
+        else:
+            final_answer = "failed"
+            
+        extracted_steps = "\n".join(
+            f"{i+1}. Used {s['tool']} -> {s['args']}" for i, s in enumerate(clean_steps)
+        ) if clean_steps else answer
+
+    return jsonify({
+        "answer": final_answer,
+        "steps": extracted_steps,
+        "video": f"/video/{video_name}" if has_video else None,
     })
 
 
