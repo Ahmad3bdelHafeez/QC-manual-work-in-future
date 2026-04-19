@@ -82,7 +82,7 @@ os.makedirs(VIDEO_DIR, exist_ok=True)
 # Figma OAuth Configuration
 FIGMA_CLIENT_ID = os.getenv('FIGMA_CLIENT_ID', 'JnmzWuEpo8leaFjBuNijvi')
 FIGMA_CLIENT_SECRET = os.getenv('FIGMA_CLIENT_SECRET', 'sbOTWwQccDNrCz3L7sVcI8LQQvFWwP')
-FIGMA_REDIRECT_URI = os.getenv('FIGMA_REDIRECT_URI', 'http://127.0.0.1:8084/callback')
+FIGMA_REDIRECT_URI = os.getenv('FIGMA_REDIRECT_URI', 'https://api-mg.onrender.com/callback')
 
 
 def mistral_call_with_retry(client, **kwargs):
