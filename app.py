@@ -2771,8 +2771,8 @@ def generate_test_plan():
         data = request.json
         job_scope = data.get('job_scope')
         template_path = os.path.join(os.path.dirname(__file__), "templates", "test_plan_template.docx")
-        # output_path = os.path.join("/tmp", "Updated_Test_Plan.docx")
-        output_path = os.path.join("templates", "Updated_Test_Plan.docx")
+        output_path = os.path.join("/tmp", "Updated_Test_Plan.docx")
+        # output_path = os.path.join("templates", "Updated_Test_Plan.docx")
         if not job_scope:
             return jsonify({"error": "job_scope is required"}), 400
         
