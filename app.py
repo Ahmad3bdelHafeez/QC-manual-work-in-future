@@ -824,26 +824,11 @@ def import_tests_to_xray_bulk(test_cases, project_key, issue_key=None, test_set_
             expected = tc.get('expected', '')
             
             if isinstance(steps_in, str) and steps_in.strip():
-                # Split steps by newlines and clean them
-                step_lines = [line.strip() for line in steps_in.split('\n') if line.strip()]
-                expected_lines = [line.strip() for line in expected.split('\n')] if expected else []
-                
-                for step_idx, step_line in enumerate(step_lines):
-                    step_data = {
-                        "action": step_line,  # Remove numbering
-                        "data": "",
-                        "result": ""
-                    }
-                    
-                    # Add expected result if available
-                    if step_idx < len(expected_lines) and expected_lines[step_idx]:
-                        step_data["result"] = expected_lines[step_idx]
-                    elif expected and step_idx == 0:
-                        step_data["result"] = expected
-                    else:
-                        step_data["result"] = "Verify expected behavior"
-                    
-                    steps_array.append(step_data)
+                steps_array.append({
+                    "action": steps_in.strip(),
+                    "data": "",
+                    "result": expected.strip() if expected and expected.strip() else "Verify expected behavior"
+                })
             
             # If no steps provided, create a default step
             if not steps_array:
@@ -3049,10 +3034,18 @@ def chat_about_testcase():
         if not message:
             return jsonify({"error": "Message is required"}), 400
 
-        # Build context
-        context = f"""
-You are a QA Assistant helping a user with a specific test case.
-        
+        # Build the structured prompt
+        system_prompt = f"""You are "ConanAI", a friendly and intelligent AI-powered QA Assistant developed by Engr. Ahmad Abdel-Hafeez.
+Your primary role is to help the Qeema Quality Team analyze and refine the provided Test Case.
+
+Guidelines for your responses:
+1. Identity & Creator: If the user asks about you ("ConanAI") or your creator ("Ahmad", "Engr. Ahmad Abdel-Hafeez", etc.), happily explain that you are an AI QA Assistant built for the Qeema Quality Team to automate STLC artifacts, and that you were created by Engr. Ahmad Abdel-Hafeez.
+2. Test Case Questions: Provide direct, concise, and accurate answers based on the provided Test Case context.
+3. Unrelated Topics: For general knowledge or completely off-topic questions, politely decline by stating you are a specialized QA Assistant and redirect the focus back to the test case.
+
+Tone, Language & Formatting: Always be friendly, stylish, concise, and use a smiling tone (😊). If the user speaks to you in Arabic, reply in Egyptian Arabic while keeping this exact same style and tone. DO NOT use markdown headers (###), horizontal lines (---), or backticks (`). Use plain text and simple bullet points (-).
+
+--- CONTEXT ---
 User Story:
 {user_story or 'Not provided'}
 
@@ -3061,19 +3054,18 @@ ID: {test_case.get('id', 'N/A')}
 Description: {test_case.get('description', 'N/A')}
 Steps: {test_case.get('steps', 'N/A')}
 Expected Result: {test_case.get('expected_result', 'N/A')}
-
-Chat History:
+---------------
 """
+        
+        chat_history_str = ""
         for msg in history:
-            role = "User" if msg.get('sender') == 'user' else "AI"
-            context += f"{role}: {msg.get('text')}\n"
+            role = "User" if msg.get('sender') == 'user' else "ConanAI"
+            chat_history_str += f"{role}: {msg.get('text')}\n"
 
-        prompt = f"""{context}
-
+        prompt = f"""{system_prompt}
+{chat_history_str}
 User: {message}
-
-Answer as the AI QA Assistant. Be helpful, concise, and focused on testing best practices.
-"""
+ConanAI:"""
         
         reply = call_mistral_model(prompt)
         return jsonify({"reply": reply})
