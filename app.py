@@ -6,7 +6,6 @@ from urllib.parse import urljoin, quote
 from flask import Flask, request, jsonify, render_template, session, redirect
 from docx import Document
 from docx.shared import Pt
-from mistralai import Mistral
 from flask_cors import CORS
 from flask import send_from_directory
 import requests
@@ -30,7 +29,6 @@ import time
 import tempfile
 from datetime import datetime
 from flask import Flask, request, jsonify, send_file
-from mistralai import Mistral
 from PIL import Image, ImageDraw, ImageFont
 import imageio
 import numpy as np
@@ -85,17 +83,50 @@ FIGMA_CLIENT_SECRET = os.getenv('FIGMA_CLIENT_SECRET', 'sbOTWwQccDNrCz3L7sVcI8LQ
 FIGMA_REDIRECT_URI = os.getenv('FIGMA_REDIRECT_URI', 'https://api-mg.onrender.com/callback')
 
 
-def mistral_call_with_retry(client, **kwargs):
+class DummyResponse:
+    def __init__(self, json_data):
+        self.choices = [DummyChoice(c) for c in json_data.get("choices", [])]
+
+class DummyChoice:
+    def __init__(self, choice_data):
+        self.message = DummyMessage(choice_data.get("message", {}))
+
+class DummyMessage:
+    def __init__(self, message_data):
+        self.content = message_data.get("content")
+        self.tool_calls = [DummyToolCall(tc) for tc in message_data.get("tool_calls", [])]
+
+class DummyToolCall:
+    def __init__(self, tc_data):
+        self.id = tc_data.get("id")
+        self.function = DummyFunction(tc_data.get("function", {}))
+
+class DummyFunction:
+    def __init__(self, func_data):
+        self.name = func_data.get("name")
+        self.arguments = func_data.get("arguments")
+        if not isinstance(self.arguments, str):
+            self.arguments = json.dumps(self.arguments)
+
+def mistral_call_with_retry(api_key, **kwargs):
     """Call Mistral with exponential backoff on rate limit errors."""
+    url = "https://api.mistral.ai/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
     for attempt in range(5):
         try:
-            return client.chat.complete(**kwargs)
-        except Exception as e:
-            if "rate_limited" in str(e) or "1300" in str(e):
+            resp = requests.post(url, headers=headers, json=kwargs)
+            resp.raise_for_status()
+            return DummyResponse(resp.json())
+        except requests.exceptions.RequestException as e:
+            if getattr(e.response, "status_code", None) == 429:
                 wait = 2 ** attempt
                 print(f"Rate limited — retrying in {wait}s...")
                 time.sleep(wait)
             else:
+                print(f"Mistral API error: {getattr(e.response, 'text', str(e))}")
                 raise
     raise RuntimeError("Mistral rate limit exceeded after retries.")
 
@@ -248,7 +279,6 @@ async def clear_browser_session(session):
     
 
 async def run_agent(messages):
-    client = Mistral(api_key=MISTRAL_KEY)
     steps  = []
 
     async with sse_client(MCP_URL) as (read, write):
@@ -271,7 +301,7 @@ async def run_agent(messages):
 
             for _ in range(10):
                 response = mistral_call_with_retry(
-                    client,
+                    MISTRAL_KEY,
                     model=MISTRAL_MODEL,
                     messages=messages,
                     tools=tools,
@@ -560,14 +590,20 @@ def download_file(filename):
 
 def call_mistral_model(prompt):
     try:
-        client = Mistral(api_key="jb0XySiEnvm0r7R3HwSAWvp0aIi80K1v")
-        model = "mistral-large-2512"
-        chat_response = client.chat.complete(
-            model=model,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        if chat_response:
-            return chat_response.choices[0].message.content.strip()
+        url = "https://api.mistral.ai/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer jb0XySiEnvm0r7R3HwSAWvp0aIi80K1v"
+        }
+        data = {
+            "model": "mistral-large-2512",
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        resp_json = response.json()
+        if resp_json.get("choices"):
+            return resp_json["choices"][0]["message"]["content"].strip()
         else:
             raise Exception("Error calling Mistral model: No response received")
     except Exception as e:
@@ -3453,9 +3489,8 @@ At the very end of your response, add this exact JSON block on its own line:
         VISION_MODEL = "pixtral-12b-2409"
         
         # Call Mistral using Pixtral Vision model
-        client = Mistral(api_key=MISTRAL_KEY)
         response = mistral_call_with_retry(
-            client,
+            MISTRAL_KEY,
             model=VISION_MODEL,
             messages=[
                 {
