@@ -544,6 +544,9 @@
       <li onclick="showPage('execution')">
         <span class="sidebar-icon">▶️</span> CoExecutor
       </li>
+      <li onclick="showPage('coapi')">
+        <span class="sidebar-icon">🌐</span> CoAPI
+      </li>
 
     </ul>
   </div>
@@ -1041,6 +1044,66 @@
             <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🔍</div>
             <p>Your generated data quality tests will appear here</p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- CoAPI Page            -->
+    <!-- ===================== -->
+    <div id="coapi" class="page" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h1 style="margin:0; font-size: 28px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 32px;">🌐</span> API Test Generator
+        </h1>
+      </div>
+
+      <div class="modern-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 class="section-title" style="margin:0;">✨ Generate from Collection/Spec</h3>
+          <div>
+            <input type="file" id="coapi-file-upload" style="display:none;" onchange="handleCoAPIFileUpload(event)">
+            <button class="btn-blue" style="background:#64748b; padding:8px 16px; font-size:14px;" onclick="document.getElementById('coapi-file-upload').click()">
+              📁 Upload File
+            </button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="form-label" for="coapi-input">API Collection / Spec (JSON, YAML, or Text)</label>
+          <textarea id="coapi-input" class="form-control" style="height: 160px; font-family: inherit;"
+            placeholder="Paste your JSON collection, Swagger definitions, or detailed text description here..."></textarea>
+          <div class="helper-text">You can paste the content or upload a file above.</div>
+        </div>
+
+        <div class="input-group">
+          <label class="form-label" for="coapi-format">Output Format</label>
+          <select id="coapi-format" class="form-control" style="width:100%; font-family: inherit; margin-top:5px; padding:10px;">
+            <option value="restassured">RestAssured (Java)</option>
+            <option value="postman">Postman Collection (JSON)</option>
+          </select>
+        </div>
+
+        <div style="text-align: right;">
+          <button class="btn-blue" onclick="generateAPITests()" id="generate-coapi-btn">
+            ⚡ Generate Tests
+          </button>
+        </div>
+      </div>
+
+      <div class="modern-card" style="margin-top: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 class="section-title" style="margin:0;">📝 Result</h3>
+          <button class="btn-green" id="download-coapi-btn" style="display:none;" onclick="downloadAPITests()">
+            ⬇️ Download
+          </button>
+        </div>
+        <div id="coapi-result-container" style="background:#1e293b; color:#f8fafc; padding:20px; border-radius:8px; overflow-x:auto; display:none;">
+          <pre><code id="coapi-result" style="font-family: monospace; white-space: pre-wrap;"></code></pre>
+        </div>
+        <div id="coapi-empty-state" style="text-align: center; color: #9ca3af; padding: 40px;">
+          <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🌐</div>
+          <p>Your generated API tests will appear here</p>
         </div>
       </div>
     </div>
@@ -5175,6 +5238,83 @@ Expected Result: ${test.expected}`;
           row.style.display = show ? "" : "none";
         });
       }
+    async function generateAPITests() {
+      const input = document.getElementById('coapi-input').value.trim();
+      const format = document.getElementById('coapi-format').value;
+      const btn = document.getElementById('generate-coapi-btn');
+      const resultContainer = document.getElementById('coapi-result-container');
+      const emptyState = document.getElementById('coapi-empty-state');
+      const resultEl = document.getElementById('coapi-result');
+      const downloadBtn = document.getElementById('download-coapi-btn');
+
+      if (!input) {
+        alert('Please provide an API collection or specification first.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Generating...';
+      
+      try {
+        const response = await fetch('/generate-api-tests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_collection: input, target_format: format })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          alert('Error: ' + data.error);
+        } else {
+          resultEl.textContent = data.result;
+          emptyState.style.display = 'none';
+          resultContainer.style.display = 'block';
+          downloadBtn.style.display = 'inline-block';
+        }
+      } catch (e) {
+        alert('An error occurred while generating tests.');
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '⚡ Generate Tests';
+      }
+    }
+
+    function downloadAPITests() {
+      const format = document.getElementById('coapi-format').value;
+      const content = document.getElementById('coapi-result').textContent;
+      
+      let filename = 'APITests';
+      if (format === 'restassured') {
+        filename += '.java';
+      } else {
+        filename += '.json';
+      }
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function handleCoAPIFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('coapi-input').value = e.target.result;
+      };
+      reader.readAsText(file);
+      // Reset input so the same file can be uploaded again if needed
+      event.target.value = '';
+    }
     </script>
 
 </body>
