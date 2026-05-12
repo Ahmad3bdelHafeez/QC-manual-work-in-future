@@ -2811,6 +2811,38 @@ def generate_test_plan():
         logger.error(f"Error generating test plan: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/generate-api-tests', methods=['POST'])
+def generate_api_tests():
+    try:
+        data = request.json
+        api_collection = data.get('api_collection')
+        target_format = data.get('target_format', 'restassured')
+
+        if not api_collection:
+            return jsonify({"error": "API Collection/Spec is required"}), 400
+
+        prompt = f"""You are an expert SDET and API Automation Engineer.
+Your task is to generate comprehensive API tests from the following collection/specification:
+---
+{api_collection}
+---
+
+Target Format: {target_format}
+
+Instructions:
+1. If the target format is 'restassured', generate a complete, valid Java class using the RestAssured framework. Include necessary imports and follow best practices.
+2. If the target format is 'postman', generate a complete and valid Postman Collection v2.1.1 JSON string that can be imported directly into Postman.
+3. Ensure the output is JUST the code or JSON, without any markdown code blocks (like ```java or ```json) or additional conversational text.
+
+Provide the result now:"""
+
+        result = call_mistral_model(prompt)
+        return jsonify({"result": result})
+
+    except Exception as e:
+        logger.error(f"Error in generate_api_tests: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/generate-test-cases', methods=['POST'])
 def generate_test_cases():
     try:
