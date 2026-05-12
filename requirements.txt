@@ -1,6 +1,6 @@
 click~=8.1.8
 python-docx~=0.8.11
-mistralai==2.4.5
+mistralai==
 Flask~=2.2.2
 flask-cors~=6.0.1
 waitress~=3.0.2
