@@ -1964,6 +1964,15 @@
     </div>
 
     <script>
+      function cleanText(text) {
+        if (!text) return "";
+        return String(text).replace(/<br\s*\/?>/gi, '\n');
+      }
+
+      function cleanCSV(text) {
+        return `"${cleanText(text).replace(/"/g, '""')}"`;
+      }
+
       function showPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById(pageId).style.display = 'block';
@@ -2805,7 +2814,7 @@
       }
 
       function copyTable() {
-        const text = currentTableData.map(row => row.join("\t")).join("\n");
+        const text = currentTableData.map(row => row.map(cell => cleanText(cell)).join("\t")).join("\n");
         navigator.clipboard.writeText(text).then(() => {
           alert("✅ Table copied to clipboard!");
         }).catch(err => {
@@ -2814,7 +2823,7 @@
       }
 
       function downloadExcel() {
-        let csvContent = currentTableData.map(row => row.map(cell => `"${String(cell).replace(/<br\s*\/?>/gi, '\n').replace(/"/g, '""')}"`).join(",")).join("\n");
+        let csvContent = currentTableData.map(row => row.map(cell => cleanCSV(cell)).join(",")).join("\n");
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -3180,7 +3189,7 @@
       }
 
       function copyBugReport() {
-        const text = bugReportTableData.map(row => row.join("\t")).join("\n");
+        const text = bugReportTableData.map(row => row.map(cell => cleanText(cell)).join("\t")).join("\n");
         navigator.clipboard.writeText(text).then(() => {
           alert("✅ Bug report table copied to clipboard!");
         }).catch(err => {
@@ -3189,7 +3198,7 @@
       }
 
       function downloadBugReport() {
-        let csvContent = bugReportTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+        let csvContent = bugReportTableData.map(row => row.map(cell => cleanCSV(cell)).join(",")).join("\n");
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -3371,7 +3380,7 @@
       }
 
       function copyData() {
-        const text = dataTableData.map(row => row.join("\t")).join("\n");
+        const text = dataTableData.map(row => row.map(cell => cleanText(cell)).join("\t")).join("\n");
         navigator.clipboard.writeText(text).then(() => {
           alert("✅ Data table copied to clipboard!");
         }).catch(err => {
@@ -3380,7 +3389,7 @@
       }
 
       function downloadData() {
-        let csvContent = dataTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+        let csvContent = dataTableData.map(row => row.map(cell => cleanCSV(cell)).join(",")).join("\n");
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -3552,7 +3561,7 @@
 
       function copyReviewTable() {
         if (!currentReviewTableData || currentReviewTableData.length === 0) return alert("Nothing to copy!");
-        const text = currentReviewTableData.map(row => row.join("\t")).join("\n");
+        const text = currentReviewTableData.map(row => row.map(cell => cleanText(cell)).join("\t")).join("\n");
         navigator.clipboard.writeText(text).then(() => {
           alert("✅ Table copied to clipboard!");
         }).catch(err => {
@@ -3562,7 +3571,7 @@
 
       function downloadReviewCSV() {
         if (!currentReviewTableData || currentReviewTableData.length < 2) return alert("No data to download!");
-        let csvContent = currentReviewTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+        let csvContent = currentReviewTableData.map(row => row.map(cell => cleanCSV(cell)).join(",")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.setAttribute("href", URL.createObjectURL(blob));
@@ -3670,7 +3679,7 @@
 
       function copyReqAnalysisTable() {
         if (!currentAnalysisTableData || currentAnalysisTableData.length === 0) return alert("Nothing to copy!");
-        const text = currentAnalysisTableData.map(row => row.join("\t")).join("\n");
+        const text = currentAnalysisTableData.map(row => row.map(cell => cleanText(cell)).join("\t")).join("\n");
         navigator.clipboard.writeText(text).then(() => {
           alert("✅ Table copied to clipboard!");
         }).catch(err => {
@@ -3680,7 +3689,7 @@
 
       function downloadReqAnalysisCSV() {
         if (!currentAnalysisTableData || currentAnalysisTableData.length < 2) return alert("No data to download!");
-        let csvContent = currentAnalysisTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+        let csvContent = currentAnalysisTableData.map(row => row.map(cell => cleanCSV(cell)).join(",")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.setAttribute("href", URL.createObjectURL(blob));
@@ -3692,7 +3701,7 @@
 
       function copyReqScenarioTable() {
         if (!currentHlsTableData || currentHlsTableData.length === 0) return alert("Nothing to copy!");
-        const text = currentHlsTableData.map(row => row.join("\t")).join("\n");
+        const text = currentHlsTableData.map(row => row.map(cell => cleanText(cell)).join("\t")).join("\n");
         navigator.clipboard.writeText(text).then(() => {
           alert("✅ Table copied to clipboard!");
         }).catch(err => {
@@ -3702,7 +3711,7 @@
 
       function downloadReqScenarioCSV() {
         if (!currentHlsTableData || currentHlsTableData.length < 2) return alert("No data to download!");
-        let csvContent = currentHlsTableData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+        let csvContent = currentHlsTableData.map(row => row.map(cell => cleanCSV(cell)).join(",")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.setAttribute("href", URL.createObjectURL(blob));
